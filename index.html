@@ -340,7 +340,7 @@ async function saveResponse(newResp) {
   newResp.total = newResp.irritability + newResp.attention + newResp.social;
 
   const { data, error } = await supabase
-    .from('screentimereg')
+    .from('survey_responses')
     .insert([newResp]);
 
   if (error) {
