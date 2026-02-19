@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Child Wellness Survey</title>
@@ -329,8 +330,28 @@ let answered = new Set();
 function getResponses() {
   try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch { return []; }
 }
-function saveResponse(r) {
-  const arr = getResponses(); arr.push(r); localStorage.setItem(STORAGE_KEY, JSON.stringify(arr));
+// Initialize Supabase (Use your real credentials from Supabase settings)
+const supabaseUrl = 'https://dnsmotitaboibecdjzlx.supabase.co';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuc21vdGl0YWJvaWJlY2Rqemx4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE0NjYzNTQsImV4cCI6MjA4NzA0MjM1NH0.f5QrgqH5kbIWmArXgWixA_ZetLZOqYg7iObskLfH6OI';
+const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+
+async function saveResponse(newResp) {
+  // Add total score calculation if not already present
+  newResp.total = newResp.irritability + newResp.attention + newResp.social;
+
+  const { data, error } = await supabase
+    .from('survey_responses')
+    .insert([newResp]);
+
+  if (error) {
+    console.error('Error saving to Supabase:', error);
+    alert('There was an error saving your response. Please try again.');
+  } else {
+    // Show thank you view on success
+    document.getElementById('survey-view').style.display = 'none';
+    document.getElementById('thankyou-view').style.display = 'flex';
+  }
+}
 }
 
 function onAnswer(q) {
