@@ -293,7 +293,7 @@ const supabase = supabase.createClient(supabaseUrl, supabaseKey);
 // Replace your old getData function
 async function refreshAll() {
   const { data, error } = await _supabase
-    .from('screentimereg')
+    .from('survey_responses')
     .select('*')
     .order('created_at', { ascending: false });
 
