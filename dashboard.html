@@ -214,7 +214,7 @@ body { font-family:'Outfit',sans-serif; background:var(--bg); color:var(--text);
       <div class="section-header">
         <h2>Individual Respondents</h2>
         <div class="filter-row">
-          <select class="filter-select" id="sort-select" onchange="renderRespondents()">
+          <select class="filter-select" id="sort-select" onchange="renderRespondents(cachedData)">
             <option value="newest">Newest First</option>
             <option value="oldest">Oldest First</option>
             <option value="irr-high">Irritability ↓</option>
@@ -222,7 +222,7 @@ body { font-family:'Outfit',sans-serif; background:var(--bg); color:var(--text);
             <option value="soc-high">Social Skills ↓</option>
             <option value="total-high">Total Score ↓</option>
           </select>
-          <select class="filter-select" id="screen-filter" onchange="renderRespondents()">
+          <select class="filter-select" id="screen-filter" onchange="renderRespondents(cachedData)">
             <option value="all">All Screen Times</option>
             <option value="Less than 1 hour">Less than 1 hr</option>
             <option value="1–2 hours">1–2 hrs</option>
@@ -273,8 +273,8 @@ body { font-family:'Outfit',sans-serif; background:var(--bg); color:var(--text);
 // ═══════════════════════════════════════════════════════════
 // SUPABASE CONFIGURATION - FILL IN YOUR CREDENTIALS BELOW
 // ═══════════════════════════════════════════════════════════
-const SUPABASE_URL = 'https://dnsmotitaboibecdjzlx.supabase.co';  // Example: https://xyzcompany.supabase.co
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuc21vdGl0YWJvaWJlY2Rqemx4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE0NjYzNTQsImV4cCI6MjA4NzA0MjM1NH0.f5QrgqH5kbIWmArXgWixA_ZetLZOqYg7iObskLfH6OI';  // Found in Project Settings > API
+const SUPABASE_URL = 'YOUR_SUPABASE_PROJECT_URL_HERE';  // Example: https://xyzcompany.supabase.co
+const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY_HERE';  // Found in Project Settings > API
 const TABLE_NAME = 'survey_responses';  // Your Supabase table name
 const PASSWORD = 'research2024';  // Dashboard password
 
@@ -329,12 +329,16 @@ async function getData() {
       throw new Error('Database connection not initialized. Please check configuration.');
     }
     
+    console.log('Fetching data from Supabase...'); // Debug
+    
     const { data, error } = await supabase_client
       .from(TABLE_NAME)
       .select('*')
       .order('created_at', { ascending: false });
 
     if (error) throw error;
+    
+    console.log('Raw Supabase data:', data); // Debug
     
     // Transform data to match expected format (handle field name differences)
     cachedData = data.map(row => ({
@@ -353,6 +357,9 @@ async function getData() {
       social: row.social,
       total: row.total
     }));
+    
+    console.log('Transformed data:', cachedData); // Debug
+    console.log(`Successfully loaded ${cachedData.length} responses`); // Debug
     
     return cachedData;
   } catch (err) {
@@ -417,7 +424,7 @@ async function refreshAll() {
   const data = await getData();
   document.getElementById('live-count').textContent = data.length + ' response' + (data.length !== 1 ? 's' : '');
   renderOverview(data);
-  renderRespondents();
+  renderRespondents(data);
   renderAnalytics(data);
   renderRawTable(data);
 }
@@ -515,8 +522,12 @@ function renderOverview(data) {
 // ═══════════════════════════════════════════════════════════
 // RESPONDENTS TAB
 // ═══════════════════════════════════════════════════════════
-function renderRespondents() {
-  let data = cachedData;
+function renderRespondents(sourceData) {
+  let data = sourceData || cachedData;
+  
+  console.log('renderRespondents called with data:', data); // Debug
+  console.log('Data length:', data.length); // Debug
+  
   if (data.length === 0) {
     document.getElementById('respondent-grid').innerHTML = `<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">👤</div><h3>No responses yet</h3><p>Individual respondent cards will appear here after parents complete the survey.</p></div>`;
     return;
