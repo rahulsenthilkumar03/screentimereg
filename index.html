@@ -322,16 +322,13 @@
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-const STORAGE_KEY = 'screentime_survey_v2';
-let answered = new Set();
+const SUPABASE_URL = "https://dnsmotitaboibecdjzlx.supabase.co";
+const SUPABASE_ANON_KEY = "YOUR_ANON_KEY_HERE"; // paste your anon key
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-function getResponses() {
-  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch { return []; }
-}
-function saveResponse(r) {
-  const arr = getResponses(); arr.push(r); localStorage.setItem(STORAGE_KEY, JSON.stringify(arr));
-}
+let answered = new Set();
 
 function onAnswer(q) {
   answered.add(q);
@@ -341,40 +338,47 @@ function onAnswer(q) {
   document.getElementById('progress-label').textContent = done + ' of 15 answered';
 }
 
-function submitSurvey() {
+async function submitSurvey() {
   const qs = ['q1','q2','q3','q4','q5','q6','q7','q8','q9','q10','q11','q12','q13','q14','q15'];
   const missing = qs.filter(q => !document.querySelector(`input[name="${q}"]:checked`));
+
   if (missing.length > 0) {
     document.getElementById('error-msg').style.display = 'block';
     document.getElementById('card-' + missing[0]).scrollIntoView({behavior:'smooth',block:'center'});
     return;
   }
+
   document.getElementById('error-msg').style.display = 'none';
 
   const vals = {};
-  qs.forEach(q => { vals[q] = parseInt(document.querySelector(`input[name="${q}"]:checked`).value); });
+  qs.forEach(q => {
+    vals[q] = parseInt(document.querySelector(`input[name="${q}"]:checked`).value);
+  });
 
-  // Calculate subscales - note q10-q15 are already reverse-scored in HTML
   const irritability = vals.q1 + vals.q2 + vals.q3 + vals.q4 + vals.q5;
   const attention = vals.q6 + vals.q7 + vals.q8 + vals.q9 + vals.q10;
   const social = vals.q11 + vals.q12 + vals.q13 + vals.q14 + vals.q15;
 
-  const screenTimeRaw = document.getElementById('screen-time').value || 'Unknown';
-  const screenTimeMid = {'Less than 1 hour':0.5,'1–2 hours':1.5,'2–4 hours':3,'4–6 hours':5,'6+ hours':7}[screenTimeRaw] || 0;
-
-  saveResponse({
-    id: Date.now(),
+  const responseData = {
     timestamp: new Date().toISOString(),
     age: document.getElementById('child-age').value || null,
-    grade: document.getElementById('child-grade').value || '—',
-    screenTime: screenTimeRaw,
-    screenTimeMid,
-    role: document.getElementById('respondent-role').value || '—',
-    q1:vals.q1, q2:vals.q2, q3:vals.q3, q4:vals.q4, q5:vals.q5,
-    q6:vals.q6, q7:vals.q7, q8:vals.q8, q9:vals.q9, q10:vals.q10,
-    q11:vals.q11, q12:vals.q12, q13:vals.q13, q14:vals.q14, q15:vals.q15,
-    irritability, attention, social, total: irritability + attention + social
-  });
+    grade: document.getElementById('child-grade').value || null,
+    screenTime: document.getElementById('screen-time').value || null,
+    role: document.getElementById('respondent-role').value || null,
+    ...vals,
+    irritability,
+    attention,
+    social,
+    total: irritability + attention + social
+  };
+
+  const { error } = await supabase.from('screentimereg').insert([responseData]);
+
+  if (error) {
+    alert("Submission failed. Check RLS policies.");
+    console.error(error);
+    return;
+  }
 
   document.getElementById('survey-view').style.display = 'none';
   const ty = document.getElementById('thankyou-view');
@@ -383,5 +387,3 @@ function submitSurvey() {
   ty.style.justifyContent = 'center';
 }
 </script>
-</body>
-</html>
