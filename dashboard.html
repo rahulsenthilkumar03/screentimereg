@@ -275,14 +275,32 @@ const PASSWORD = 'research2024';
 let chartInstances = {};
 
 function destroyChart(id) { if (chartInstances[id]) { chartInstances[id].destroy(); delete chartInstances[id]; } }
-function doLogin() {
-  if (document.getElementById('pass-input').value === PASSWORD) {
+async function doLogin() {
+  const pass = document.getElementById('pass-input').value;
+  if (pass === 'admin123') { // Change to your actual password
+    
+    // 1. Fetch data from Supabase instead of LocalStorage
+    const { data, error } = await _supabase
+      .from('survey_responses')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      alert("Error loading data: " + error.message);
+      return;
+    }
+
+    // 2. Save the data to a global variable so charts can see it
+    window.allData = data; 
+    
+    // 3. Reveal the dashboard
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('app').style.display = 'block';
-    refreshAll();
+    
+    // 4. Run your render functions
+    refreshAll(); 
   } else {
     document.getElementById('login-err').style.display = 'block';
-    document.getElementById('pass-input').value = '';
   }
 }
 
