@@ -357,7 +357,9 @@
     const attention = vals.q6 + vals.q7 + vals.q8 + vals.q9 + vals.q10;
     const social = vals.q11 + vals.q12 + vals.q13 + vals.q14 + vals.q15;
 
-    const screenTimeRaw = document.getElementById('screen_time').value || {'Less than 1 hour':0.5,'1–2 hours':1.5,'2–4 hours':3,'4–6 hours':5,'6+ hours':7}[screenTimeRaw] || 0;
+    const screenTimeRaw = document.getElementById('screen_time')?.value || 'Unknown',
+    const screenTimeMid =   screenTimeMid: {'Less than 1 hour':0.5,'1–2 hours':1.5,'2–4 hours':3,'4–6 hours':5,'6+ hours':7}[document.getElementById('screen_time')?.value] || 0,
+
 
     saveResponse({
       timestamp: new Date().toISOString(),
