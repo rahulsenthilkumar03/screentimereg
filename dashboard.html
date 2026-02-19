@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Research Dashboard — Screen Time Survey</title>
@@ -285,13 +286,41 @@ function doLogin() {
   }
 }
 
-function getData() { try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch { return []; } }
-function scoreLevel(s, max) {
-  const p = s / max;
-  if (p <= 0.33) return ['Low', 'badge-low'];
-  if (p <= 0.55) return ['Moderate', 'badge-mod'];
-  if (p <= 0.75) return ['Elevated', 'badge-high'];
-  return ['High', 'badge-vhigh'];
+const supabaseUrl = 'https://dnsmotitaboibecdjzlx.supabase.co';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuc21vdGl0YWJvaWJlY2Rqemx4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE0NjYzNTQsImV4cCI6MjA4NzA0MjM1NH0.f5QrgqH5kbIWmArXgWixA_ZetLZOqYg7iObskLfH6OI';
+const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+
+// Replace your old getData function
+async function refreshAll() {
+  const { data, error } = await supabase
+    .from('survey_responses')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching data:', error);
+    return;
+  }
+
+  // Update your global data variable and re-render charts
+  window.allData = data; 
+  renderStats();
+  renderCharts();
+  renderRespondents();
+  updateLiveCount(data.length);
+}
+
+// Call refreshAll() when the user logs in
+async function doLogin() {
+  const pass = document.getElementById('pass-input').value;
+  if (pass === 'your_password') { // You should use Supabase Auth for real security
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    await refreshAll();
+  } else {
+    document.getElementById('login-err').style.display = 'block';
+  }
+}
 }
 function scoreLevelChip(s, max) {
   const p = s / max;
