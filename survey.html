@@ -327,8 +327,8 @@
 // ═══════════════════════════════════════════════════════════
 // SUPABASE CONFIGURATION - FILL IN YOUR CREDENTIALS BELOW
 // ═══════════════════════════════════════════════════════════
-const SUPABASE_URL = 'YOUR_SUPABASE_PROJECT_URL_HERE';  // Example: https://xyzcompany.supabase.co
-const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY_HERE';  // Found in Project Settings > API
+const SUPABASE_URL = 'https://dnsmotitaboibecdjzlx.supabase.co';  // Example: https://xyzcompany.supabase.co
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuc21vdGl0YWJvaWJlY2Rqemx4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE0NjYzNTQsImV4cCI6MjA4NzA0MjM1NH0.f5QrgqH5kbIWmArXgWixA_ZetLZOqYg7iObskLfH6OI';  // Found in Project Settings > API
 const TABLE_NAME = 'survey_responses';  // Your Supabase table name
 
 // Initialize Supabase client
@@ -398,10 +398,10 @@ async function submitSurvey() {
   const social = vals.q11 + vals.q12 + vals.q13 + vals.q14 + vals.q15;
 
   // Get demographic data (safely handle missing elements)
-  const ageEl = document.getElementById('child-age');
-  const gradeEl = document.getElementById('child-grade');
-  const screenTimeEl = document.getElementById('screen-time');
-  const roleEl = document.getElementById('respondent-role');
+  const ageEl = document.getElementById('age');
+  const gradeEl = document.getElementById('grade');
+  const screenTimeEl = document.getElementById('screen_time');
+  const roleEl = document.getElementById('role');
   
   const age = ageEl ? ageEl.value : null;
   const grade = gradeEl ? gradeEl.value : '—';
