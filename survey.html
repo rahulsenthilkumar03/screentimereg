@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Child Wellness Survey</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=Nunito:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cream: #fdf8f2; --warm-white: #fffcf8; --soft-sage: #8aab8a; --sage-light: #c4d9c4; --sage-dark: #5c8a5c;
+    --terracotta: #c87941; --terracotta-light: #f0d4be; --terracotta-pale: #faf0e8;
+    --text-dark: #2d2d2d; --text-mid: #5a5a5a; --text-light: #8a8a8a; --border: #e8ddd2;
+    --shadow: 0 4px 24px rgba(0,0,0,0.07); --shadow-hover: 0 8px 32px rgba(0,0,0,0.12);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Nunito', sans-serif; background: var(--cream); color: var(--text-dark); min-height: 100vh; }
+
+  .survey-header {
+    background: linear-gradient(135deg, #5c8a5c 0%, #8aab8a 50%, #a8c5a8 100%);
+    padding: 48px 24px 40px; text-align: center; position: relative; overflow: hidden;
+  }
+  .survey-header::before { content:''; position:absolute; top:-60px; right:-60px; width:200px; height:200px; background:rgba(255,255,255,0.08); border-radius:50%; }
+  .survey-header::after { content:''; position:absolute; bottom:-40px; left:-30px; width:150px; height:150px; background:rgba(255,255,255,0.06); border-radius:50%; }
+  .header-badge { display:inline-block; background:rgba(255,255,255,0.2); color:#fff; font-size:12px; font-weight:700; letter-spacing:2px; text-transform:uppercase; padding:6px 16px; border-radius:20px; margin-bottom:16px; }
+  .survey-header h1 { font-family:'Lora',serif; font-size:clamp(26px,5vw,38px); color:#fff; font-weight:600; margin-bottom:12px; line-height:1.3; position:relative; z-index:1; }
+  .survey-header p { color:rgba(255,255,255,0.88); font-size:16px; max-width:540px; margin:0 auto; line-height:1.6; position:relative; z-index:1; }
+  .progress-bar-wrap { background:rgba(255,255,255,0.25); height:4px; border-radius:2px; margin-top:28px; max-width:400px; margin-left:auto; margin-right:auto; position:relative; z-index:1; }
+  .progress-bar-fill { height:100%; background:#fff; border-radius:2px; transition:width 0.5s ease; width:0%; }
+  .progress-label { color:rgba(255,255,255,0.75); font-size:12px; margin-top:8px; position:relative; z-index:1; }
+
+  .survey-body { max-width:720px; margin:0 auto; padding:40px 20px 60px; }
+
+  .intro-card { background:var(--warm-white); border:1px solid var(--border); border-radius:16px; padding:28px 32px; margin-bottom:36px; box-shadow:var(--shadow); }
+  .intro-card p { color:var(--text-mid); font-size:15px; line-height:1.7; }
+  .intro-card p+p { margin-top:12px; }
+  .intro-card strong { color:var(--sage-dark); font-weight:700; }
+
+  .question-card { background:var(--warm-white); border:1px solid var(--border); border-radius:16px; padding:28px 32px; margin-bottom:20px; box-shadow:var(--shadow); transition:box-shadow 0.2s ease, border-color 0.2s ease; animation:slideIn 0.4s ease both; }
+  .question-card:hover { box-shadow:var(--shadow-hover); border-color:var(--sage-light); }
+  .question-card.answered { border-left:4px solid var(--soft-sage); }
+  @keyframes slideIn { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
+
+  .question-text { font-family:'Lora',serif; font-size:18px; font-weight:600; color:var(--text-dark); margin-bottom:6px; line-height:1.4; }
+  .question-subtext { font-size:13px; color:var(--text-light); margin-bottom:22px; font-style:italic; }
+
+  .likert-wrap { display:flex; gap:8px; align-items:stretch; }
+  .likert-option { flex:1; display:flex; flex-direction:column; align-items:center; gap:8px; cursor:pointer; }
+  .likert-option input[type="radio"] { display:none; }
+  .likert-btn { width:100%; aspect-ratio:1; max-width:58px; border-radius:12px; border:2px solid var(--border); background:var(--cream); display:flex; align-items:center; justify-content:center; font-size:18px; font-weight:700; color:var(--text-light); transition:all 0.18s ease; cursor:pointer; font-family:'Nunito',sans-serif; }
+  .likert-option:hover .likert-btn { border-color:var(--soft-sage); background:var(--sage-light); color:var(--sage-dark); transform:translateY(-2px); box-shadow:0 4px 12px rgba(92,138,92,0.2); }
+  .likert-option input[type="radio"]:checked + .likert-btn { background:var(--soft-sage); border-color:var(--sage-dark); color:#fff; transform:translateY(-3px); box-shadow:0 6px 16px rgba(92,138,92,0.35); }
+  .likert-label { font-size:11px; color:var(--text-light); text-align:center; line-height:1.3; font-weight:500; }
+
+  .child-info-section { background:var(--terracotta-pale); border:1px solid var(--terracotta-light); border-radius:16px; padding:28px 32px; margin-bottom:28px; box-shadow:var(--shadow); }
+  .child-info-section h2 { font-family:'Lora',serif; font-size:18px; color:var(--terracotta); margin-bottom:6px; font-weight:600; }
+  .child-info-section p { font-size:13px; color:var(--text-light); margin-bottom:20px; font-style:italic; }
+  .info-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  @media(max-width:480px){.info-row{grid-template-columns:1fr}}
+  .info-field label { display:block; font-size:13px; font-weight:600; color:var(--text-mid); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px; }
+  .info-field input, .info-field select { width:100%; padding:10px 14px; border:2px solid var(--terracotta-light); border-radius:10px; font-family:'Nunito',sans-serif; font-size:15px; color:var(--text-dark); background:#fff; outline:none; transition:border-color 0.2s; }
+  .info-field input:focus, .info-field select:focus { border-color:var(--terracotta); }
+
+  .submit-section { text-align:center; margin-top:36px; }
+  .submit-btn { background:linear-gradient(135deg,var(--sage-dark),var(--soft-sage)); color:#fff; border:none; padding:16px 52px; border-radius:50px; font-family:'Nunito',sans-serif; font-size:17px; font-weight:700; cursor:pointer; box-shadow:0 6px 20px rgba(92,138,92,0.35); transition:all 0.2s ease; letter-spacing:0.5px; }
+  .submit-btn:hover { transform:translateY(-2px); box-shadow:0 10px 28px rgba(92,138,92,0.45); }
+  .submit-note { margin-top:14px; font-size:13px; color:var(--text-light); font-style:italic; }
+  .error-msg { color:#c0392b; font-size:14px; margin-top:12px; display:none; font-weight:600; }
+
+  .email-entry-screen { max-width:500px; margin:0 auto; }
+  .email-card { background:var(--warm-white); border:1px solid var(--border); border-radius:20px; padding:40px; box-shadow:var(--shadow); text-align:center; }
+  .email-card h2 { font-family:'Lora',serif; font-size:24px; color:var(--text-dark); margin-bottom:12px; }
+  .email-card .subtitle { color:var(--text-mid); margin-bottom:28px; }
+  .email-input { width:100%; padding:14px 18px; border:2px solid var(--border); border-radius:12px; font-family:'Nunito',sans-serif; font-size:16px; margin-bottom:20px; }
+  .email-input:focus { border-color:var(--soft-sage); outline:none; }
+
+  .intervention-notice { background:#fff3cd; border:2px solid #ffc107; border-radius:12px; padding:20px; margin-bottom:28px; }
+  .intervention-notice h3 { color:#856404; font-size:16px; margin-bottom:10px; font-family:'Lora',serif; }
+  .intervention-notice p { color:#856404; font-size:14px; line-height:1.6; }
+  .intervention-notice strong { font-weight:700; }
+
+  #thankyou-view { display:none; min-height:100vh; background:var(--cream); align-items:center; justify-content:center; padding:40px 20px; }
+  .thankyou-icon { width:80px; height:80px; background:linear-gradient(135deg,var(--sage-dark),var(--soft-sage)); border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 28px; font-size:36px; box-shadow:0 8px 24px rgba(92,138,92,0.35); animation:popIn 0.5s cubic-bezier(0.34,1.56,0.64,1) both; }
+  @keyframes popIn { from{transform:scale(0);opacity:0} to{transform:scale(1);opacity:1} }
+  .thankyou-card { background:var(--warm-white); border:1px solid var(--border); border-radius:20px; padding:48px 40px; max-width:600px; margin:0 auto; box-shadow:var(--shadow); text-align:center; }
+  .thankyou-card h2 { font-family:'Lora',serif; font-size:28px; color:var(--sage-dark); margin-bottom:14px; font-weight:600; }
+  .thankyou-card p { color:var(--text-mid); font-size:16px; line-height:1.7; margin-bottom:12px; }
+  .thankyou-card .instructions-box { background:var(--terracotta-pale); border:1px solid var(--terracotta-light); border-radius:12px; padding:20px; margin-top:24px; text-align:left; }
+  .thankyou-card .instructions-box h3 { font-size:16px; color:var(--terracotta); margin-bottom:10px; }
+  .thankyou-card .instructions-box p { font-size:14px; color:var(--text-dark); }
+
+  @media(max-width:540px){.question-card{padding:22px 18px} .survey-header{padding:36px 20px 30px}}
+</style>
+</head>
+<body>
+
+<!-- EMAIL ENTRY SCREEN -->
+<div id="email-screen">
+  <div class="survey-header">
+    <div class="header-badge">Child Wellness Survey</div>
+    <h1>Welcome to the Study</h1>
+    <p>This is a 6-week pre-post intervention study on screen time and child behavior</p>
+  </div>
+  <div class="survey-body email-entry-screen">
+    <div class="email-card">
+      <h2>Let's Get Started</h2>
+      <p class="subtitle">Please enter your email address to begin or continue the survey</p>
+      <input type="email" id="email-input" class="email-input" placeholder="your.email@example.com" required>
+      <button class="submit-btn" onclick="checkParticipant()">Continue</button>
+      <div class="error-msg" id="email-error"></div>
+    </div>
+  </div>
+</div>
+
+<!-- SURVEY VIEW -->
+<div id="survey-view" style="display:none;">
+  <div class="survey-header">
+    <div class="header-badge">Child Wellness Survey</div>
+    <h1>A Few Questions About Your Child</h1>
+    <p id="header-subtitle">This short survey helps us better understand your child's everyday behaviors and emotional patterns.</p>
+    <div class="progress-bar-wrap">
+      <div class="progress-bar-fill" id="progress-fill"></div>
+    </div>
+    <div class="progress-label" id="progress-label">0 of 15 answered</div>
+  </div>
+
+  <div class="survey-body">
+    <!-- Intervention Notice (shown only for treatment group at baseline) -->
+    <div id="intervention-notice" class="intervention-notice" style="display:none;">
+      <h3>⚠️ Important: You've Been Assigned to the Treatment Group</h3>
+      <p>After completing this survey, please <strong>reduce your child's daily screen time by 50%</strong> for the next 6 weeks. We'll ask you to complete this same survey again in 6 weeks to measure the impact.</p>
+      <p style="margin-top:10px;"><strong>Example:</strong> If your child currently uses screens for 4 hours/day, reduce it to 2 hours/day.</p>
+    </div>
+
+    <!-- Returning Participant Notice -->
+    <div id="returning-notice" class="intro-card" style="display:none;">
+      <p><strong>Welcome back!</strong> You're completing your <strong id="time-point-label">week 6</strong> survey.</p>
+      <p>Please answer the questions based on your child's behavior <strong>over the past week</strong>.</p>
+    </div>
+
+    <div class="intro-card" id="first-time-intro">
+      <p>Thank you for taking a few minutes to complete this survey. <strong>Each question asks about behaviors you may observe in your child</strong> on a typical day or week.</p>
+      <p>Please rate each statement using the scale provided — from <strong>"Never"</strong> to <strong>"Always."</strong> Try to answer based on what you've noticed over the past few weeks.</p>
+    </div>
+
+    <div class="child-info-section">
+      <h2>About Your Child</h2>
+      <p>This information helps us understand responses in context. All information is kept confidential.</p>
+      <div class="info-row">
+        <div class="info-field"><label>Child's Age</label><input type="number" id="child-age" min="3" max="18" placeholder="e.g. 7"></div>
+        <div class="info-field"><label>Grade Level</label>
+          <select id="child-grade">
+            <option value="">Select grade</option>
+            <option>Pre-K</option><option>Kindergarten</option><option>1st Grade</option><option>2nd Grade</option>
+            <option>3rd Grade</option><option>4th Grade</option><option>5th Grade</option>
+          </select>
+        </div>
+        <div class="info-field"><label>Avg. Daily Screen Time</label>
+          <select id="screen-time">
+            <option value="">Select range</option>
+            <option>Less than 1 hour</option><option>1–2 hours</option><option>2–4 hours</option>
+            <option>4–6 hours</option><option>6+ hours</option>
+          </select>
+        </div>
+        <div class="info-field"><label>Your Relationship</label>
+          <select id="respondent-role">
+            <option value="">Select role</option>
+            <option>Parent</option><option>Guardian</option><option>Caregiver</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <form id="survey-form">
+      <!-- Q1-Q5: Irritability -->
+      <div class="question-card" id="card-q1">
+        <div class="question-text">My child overreacts when told "no."</div>
+        <div class="question-subtext">Think about how your child responds when they don't get what they want.</div>
+        <div class="likert-wrap">
+          <label class="likert-option"><input type="radio" name="q1" value="1" onchange="onAnswer('q1')"><div class="likert-btn">1</div><div class="likert-label">Never</div></label>
+          <label class="likert-option"><input type="radio" name="q1" value="2" onchange="onAnswer('q1')"><div class="likert-btn">2</div><div class="likert-label">Rarely</div></label>
+          <label class="likert-option"><input type="radio" name="q1" value="3" onchange="onAnswer('q1')"><div class="likert-btn">3</div><div class="likert-label">Sometimes</div></label>
+          <label class="likert-option"><input type="radio" name="q1" value="4" onchange="onAnswer('q1')"><div class="likert-btn">4</div><div class="likert-label">Often</div></label>
+          <label class="likert-option"><input type="radio" name="q1" value="5" onchange="onAnswer('q1')"><div class="likert-btn">5</div><div class="likert-label">Always</div></label>
+        </div>
+      </div>
+
+      <div class="question-card" id="card-q2">
+        <div class="question-text">My child has a bad temper.</div>
+        <div class="question-subtext">Consider how your child handles small frustrations throughout the day.</div>
+        <div class="likert-wrap">
+          <label class="likert-option"><input type="radio" name="q2" value="1" onchange="onAnswer('q2')"><div class="likert-btn">1</div><div class="likert-label">Never</div></label>
+          <label class="likert-option"><input type="radio" name="q2" value="2" onchange="onAnswer('q2')"><div class="likert-btn">2</div><div class="likert-label">Rarely</div></label>
+          <label class="likert-option"><input type="radio" name="q2" value="3" onchange="onAnswer('q2')"><div class="likert-btn">3</div><div class="likert-label">Sometimes</div></label>
+          <label class="likert-option"><input type="radio" name="q2" value="4" onchange="onAnswer('q2')"><div class="likert-btn">4</div><div class="likert-label">Often</div></label>
+          <label class="likert-option"><input type="radio" name="q2" value="5" onchange="onAnswer('q2')"><div class="likert-btn">5</div><div class="likert-label">Always</div></label>
+        </div>
+      </div>
+
+      <div class="question-card" id="card-q3">
+        <div class="question-text">My child is argumentative with parents.</div>
+        <div class="question-subtext">Think about disagreements or conflicts between you and your child during a typical week.</div>
+        <div class="likert-wrap">
+          <label class="likert-option"><input type="radio" name="q3" value="1" onchange="onAnswer('q3')"><div class="likert-btn">1</div><div class="likert-label">Never</div></label>
+          <label class="likert-option"><input type="radio" name="q3" value="2" onchange="onAnswer('q3')"><div class="likert-btn">2</div><div class="likert-label">Rarely</div></label>
+          <label class="likert-option"><input type="radio" name="q3" value="3" onchange="onAnswer('q3')"><div class="likert-btn">3</div><div class="likert-label">Sometimes</div></label>
+          <label class="likert-option"><input type="radio" name="q3" value="4" onchange="onAnswer('q3')"><div class="likert-btn">4</div><div class="likert-label">Often</div></label>
+          <label class="likert-option"><input type="radio" name="q3" value="5" onchange="onAnswer('q3')"><div class="likert-btn">5</div><div class="likert-label">Always</div></label>
+        </div>
+      </div>
+
+      <div class="question-card" id="card-q4">
+        <div class="question-text">My child easily gets frustrated.</div>
+        <div class="question-subtext">Think about how quickly your child becomes upset when things don't go as expected.</div>
+        <div class="likert-wrap">
+          <label class="likert-option"><input type="radio" name="q4" value="1" onchange="onAnswer('q4')"><div class="likert-btn">1</div><div class="likert-label">Never</div></label>
+          <label class="likert-option"><input type="radio" name="q4" value="2" onchange="onAnswer('q4')"><div class="likert-btn">2</div><div class="likert-label">Rarely</div></label>
+          <label class="likert-option"><input type="radio" name="q4" value="3" onchange="onAnswer('q4')"><div class="likert-btn">3</div><div class="likert-label">Sometimes</div></label>
+          <label class="likert-option"><input type="radio" name="q4" value="4" onchange="onAnswer('q4')"><div class="likert-btn">4</div><div class="likert-label">Often</div></label>
+          <label class="likert-option"><input type="radio" name="q4" value="5" onchange="onAnswer('q4')"><div class="likert-btn">5</div><div class="likert-label">Always</div></label>
+        </div>
+      </div>
+
+      <div class="question-card" id="card-q5">
+        <div class="question-text">My child overreacts to minor problems.</div>
+        <div class="question-subtext">Consider whether small setbacks tend to result in large emotional responses.</div>
+        <div class="likert-wrap">
+          <label class="likert-option"><input type="radio" name="q5" value="1" onchange="onAnswer('q5')"><div class="likert-btn">1</div><div class="likert-label">Never</div></label>
+          <label class="likert-option"><input type="radio" name="q5" value="2" onchange="onAnswer('q5')"><div class="likert-btn">2</div><div class="likert-label">Rarely</div></label>
+          <label class="likert-option"><input type="radio" name="q5" value="3" onchange="onAnswer('q5')"><div class="likert-btn">3</div><div class="likert-label">Sometimes</div></label>
+          <label class="likert-option"><input type="radio" name="q5" value="4" onchange="onAnswer('q5')"><div class="likert-btn">4</div><div class="likert-label">Often</div></label>
+          <label class="likert-option"><input type="radio" name="q5" value="5" onchange="onAnswer('q5')"><div class="likert-btn">5</div><div class="likert-label">Always</div></label>
+        </div>
+      </div>
+
+      <!-- Q6-Q10: Attention -->
+      <div class="question-card" id="card-q6">
+        <div class="question-text">My child is easily distracted.</div>
+        <div class="question-subtext">Think about whether background noises or movement pull your child away from what they're doing.</div>
+        <div class="likert-wrap">
+          <label class="likert-option"><input type="radio" name="q6" value="1" onchange="onAnswer('q6')"><div class="likert-btn">1</div><div class="likert-label">Never</div></label>
+          <label class="likert-option"><input type="radio" name="q6" value="2" onchange="onAnswer('q6')"><div class="likert-btn">2</div><div class="likert-label">Rarely</div></label>
+          <label class="likert-option"><input type="radio" name="q6" value="3" onchange="onAnswer('q6')"><div class="likert-btn">3</div><div class="likert-label">Sometimes</div></label>
+          <label class="likert-option"><input type="radio" name="q6" value="4" onchange="onAnswer('q6')"><div class="likert-btn">4</div><div class="likert-label">Often</div></label>
+          <label class="likert-option"><input type="radio" name="q6" value="5" onchange="onAnswer('q6')"><div class="likert-btn">5</div><div class="likert-label">Always</div></label>
+        </div>
+      </div>
+
+      <div class="question-card" id="card-q7">
+        <div class="question-text">My child struggles with staying on task.</div>
+        <div class="question-subtext">Think about activities like homework or chores — does your child's focus fade before finishing?</div>
+        <div class="likert-wrap">
+          <label class="likert-option"><input type="radio" name="q7" value="1" onchange="onAnswer('q7')"><div class="likert-btn">1</div><div class="likert-label">Never</div></label>
+          <label class="likert-option"><input type="radio" name="q7" value="2" onchange="onAnswer('q7')"><div class="likert-btn">2</div><div class="likert-label">Rarely</div></label>
+          <label class="likert-option"><input type="radio" name="q7" value="3" onchange="onAnswer('q7')"><div class="likert-btn">3</div><div class="likert-label">Sometimes</div></label>
+          <label class="likert-option"><input type="radio" name="q7" value="4" onchange="onAnswer('q7')"><div class="likert-btn">4</div><div class="likert-label">Often</div></label>
+          <label class="likert-option"><input type="radio" name="q7" value="5" onchange="onAnswer('q7')"><div class="likert-btn">5</div><div class="likert-label">Always</div></label>
+        </div>
+      </div>
+
+      <div class="question-card" id="card-q8">
+        <div class="question-text">My child struggles with paying attention.</div>
+        <div class="question-subtext">Consider whether your child often misses details or seems "tuned out" during activities.</div>
+        <div class="likert-wrap">
+          <label class="likert-option"><input type="radio" name="q8" value="1" onchange="onAnswer('q8')"><div class="likert-btn">1</div><div class="likert-label">Never</div></label>
+          <label class="likert-option"><input type="radio" name="q8" value="2" onchange="onAnswer('q8')"><div class="likert-btn">2</div><div class="likert-label">Rarely</div></label>
+          <label class="likert-option"><input type="radio" name="q8" value="3" onchange="onAnswer('q8')"><div class="likert-btn">3</div><div class="likert-label">Sometimes</div></label>
+          <label class="likert-option"><input type="radio" name="q8" value="4" onchange="onAnswer('q8')"><div class="likert-btn">4</div><div class="likert-label">Often</div></label>
+          <label class="likert-option"><input type="radio" name="q8" value="5" onchange="onAnswer('q8')"><div class="likert-btn">5</div><div class="likert-label">Always</div></label>
+        </div>
+      </div>
+
+      <div class="question-card" id="card-q9">
+        <div class="question-text">My child is forgetful about daily activities.</div>
+        <div class="question-subtext">Think about whether your child often forgets routines, homework, or things they need for school.</div>
+        <div class="likert-wrap">
+          <label class="likert-option"><input type="radio" name="q9" value="1" onchange="onAnswer('q9')"><div class="likert-btn">1</div><div class="likert-label">Never</div></label>
+          <label class="likert-option"><input type="radio" name="q9" value="2" onchange="onAnswer('q9')"><div class="likert-btn">2</div><div class="likert-label">Rarely</div></label>
+          <label class="likert-option"><input type="radio" name="q9" value="3" onchange="onAnswer('q9')"><div class="likert-btn">3</div><div class="likert-label">Sometimes</div></label>
+          <label class="likert-option"><input type="radio" name="q9" value="4" onchange="onAnswer('q9')"><div class="likert-btn">4</div><div class="likert-label">Often</div></label>
+          <label class="likert-option"><input type="radio" name="q9" value="5" onchange="onAnswer('q9')"><div class="likert-btn">5</div><div class="likert-label">Always</div></label>
+        </div>
+      </div>
+
+      <div class="question-card" id="card-q10">
+        <div class="question-text">My child pays attention when he or she is spoken to.</div>
+        <div class="question-subtext">Think about how well your child maintains attention during conversations with you.</div>
+        <div class="likert-wrap">
+          <label class="likert-option"><input type="radio" name="q10" value="5" onchange="onAnswer('q10')"><div class="likert-btn">1</div><div class="likert-label">Never</div></label>
+          <label class="likert-option"><input type="radio" name="q10" value="4" onchange="onAnswer('q10')"><div class="likert-btn">2</div><div class="likert-label">Rarely</div></label>
+          <label class="likert-option"><input type="radio" name="q10" value="3" onchange="onAnswer('q10')"><div class="likert-btn">3</div><div class="likert-label">Sometimes</div></label>
+          <label class="likert-option"><input type="radio" name="q10" value="2" onchange="onAnswer('q10')"><div class="likert-btn">4</div><div class="likert-label">Often</div></label>
+          <label class="likert-option"><input type="radio" name="q10" value="1" onchange="onAnswer('q10')"><div class="likert-btn">5</div><div class="likert-label">Always</div></label>
+        </div>
+      </div>
+
+      <!-- Q11-Q15: Social Skills -->
+      <div class="question-card" id="card-q11">
+        <div class="question-text">My child gets along with other children.</div>
+        <div class="question-subtext">Think about how your child interacts with peers during play or group activities.</div>
+        <div class="likert-wrap">
+          <label class="likert-option"><input type="radio" name="q11" value="5" onchange="onAnswer('q11')"><div class="likert-btn">1</div><div class="likert-label">Never</div></label>
+          <label class="likert-option"><input type="radio" name="q11" value="4" onchange="onAnswer('q11')"><div class="likert-btn">2</div><div class="likert-label">Rarely</div></label>
+          <label class="likert-option"><input type="radio" name="q11" value="3" onchange="onAnswer('q11')"><div class="likert-btn">3</div><div class="likert-label">Sometimes</div></label>
+          <label class="likert-option"><input type="radio" name="q11" value="2" onchange="onAnswer('q11')"><div class="likert-btn">4</div><div class="likert-label">Often</div></label>
+          <label class="likert-option"><input type="radio" name="q11" value="1" onchange="onAnswer('q11')"><div class="likert-btn">5</div><div class="likert-label">Always</div></label>
+        </div>
+      </div>
+
+      <div class="question-card" id="card-q12">
+        <div class="question-text">My child volunteers to help with things.</div>
+        <div class="question-subtext">Consider whether your child offers to help with chores, tasks, or assisting others without being asked.</div>
+        <div class="likert-wrap">
+          <label class="likert-option"><input type="radio" name="q12" value="5" onchange="onAnswer('q12')"><div class="likert-btn">1</div><div class="likert-label">Never</div></label>
+          <label class="likert-option"><input type="radio" name="q12" value="4" onchange="onAnswer('q12')"><div class="likert-btn">2</div><div class="likert-label">Rarely</div></label>
+          <label class="likert-option"><input type="radio" name="q12" value="3" onchange="onAnswer('q12')"><div class="likert-btn">3</div><div class="likert-label">Sometimes</div></label>
+          <label class="likert-option"><input type="radio" name="q12" value="2" onchange="onAnswer('q12')"><div class="likert-btn">4</div><div class="likert-label">Often</div></label>
+          <label class="likert-option"><input type="radio" name="q12" value="1" onchange="onAnswer('q12')"><div class="likert-btn">5</div><div class="likert-label">Always</div></label>
+        </div>
+      </div>
+
+      <div class="question-card" id="card-q13">
+        <div class="question-text">My child makes positive comments about others.</div>
+        <div class="question-subtext">Think about whether your child says kind or complimentary things about friends, family, or classmates.</div>
+        <div class="likert-wrap">
+          <label class="likert-option"><input type="radio" name="q13" value="5" onchange="onAnswer('q13')"><div class="likert-btn">1</div><div class="likert-label">Never</div></label>
+          <label class="likert-option"><input type="radio" name="q13" value="4" onchange="onAnswer('q13')"><div class="likert-btn">2</div><div class="likert-label">Rarely</div></label>
+          <label class="likert-option"><input type="radio" name="q13" value="3" onchange="onAnswer('q13')"><div class="likert-btn">3</div><div class="likert-label">Sometimes</div></label>
+          <label class="likert-option"><input type="radio" name="q13" value="2" onchange="onAnswer('q13')"><div class="likert-btn">4</div><div class="likert-label">Often</div></label>
+          <label class="likert-option"><input type="radio" name="q13" value="1" onchange="onAnswer('q13')"><div class="likert-btn">5</div><div class="likert-label">Always</div></label>
+        </div>
+      </div>
+
+      <div class="question-card" id="card-q14">
+        <div class="question-text">My child begins conversations appropriately.</div>
+        <div class="question-subtext">Consider whether your child knows how to start talking to others politely and at the right time.</div>
+        <div class="likert-wrap">
+          <label class="likert-option"><input type="radio" name="q14" value="5" onchange="onAnswer('q14')"><div class="likert-btn">1</div><div class="likert-label">Never</div></label>
+          <label class="likert-option"><input type="radio" name="q14" value="4" onchange="onAnswer('q14')"><div class="likert-btn">2</div><div class="likert-label">Rarely</div></label>
+          <label class="likert-option"><input type="radio" name="q14" value="3" onchange="onAnswer('q14')"><div class="likert-btn">3</div><div class="likert-label">Sometimes</div></label>
+          <label class="likert-option"><input type="radio" name="q14" value="2" onchange="onAnswer('q14')"><div class="likert-btn">4</div><div class="likert-label">Often</div></label>
+          <label class="likert-option"><input type="radio" name="q14" value="1" onchange="onAnswer('q14')"><div class="likert-btn">5</div><div class="likert-label">Always</div></label>
+        </div>
+      </div>
+
+      <div class="question-card" id="card-q15">
+        <div class="question-text">My child politely asks for help when needed.</div>
+        <div class="question-subtext">Think about whether your child uses respectful language when requesting assistance.</div>
+        <div class="likert-wrap">
+          <label class="likert-option"><input type="radio" name="q15" value="5" onchange="onAnswer('q15')"><div class="likert-btn">1</div><div class="likert-label">Never</div></label>
+          <label class="likert-option"><input type="radio" name="q15" value="4" onchange="onAnswer('q15')"><div class="likert-btn">2</div><div class="likert-label">Rarely</div></label>
+          <label class="likert-option"><input type="radio" name="q15" value="3" onchange="onAnswer('q15')"><div class="likert-btn">3</div><div class="likert-label">Sometimes</div></label>
+          <label class="likert-option"><input type="radio" name="q15" value="2" onchange="onAnswer('q15')"><div class="likert-btn">4</div><div class="likert-label">Often</div></label>
+          <label class="likert-option"><input type="radio" name="q15" value="1" onchange="onAnswer('q15')"><div class="likert-btn">5</div><div class="likert-label">Always</div></label>
+        </div>
+      </div>
+
+      <div class="submit-section">
+        <button type="button" class="submit-btn" onclick="submitSurvey()">Submit Survey</button>
+        <div class="error-msg" id="error-msg">⚠ Please answer all 15 questions before submitting.</div>
+        <p class="submit-note">Your responses are completely anonymous and will only be used for research purposes.</p>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- THANK YOU VIEW -->
+<div id="thankyou-view">
+  <div class="thankyou-card">
+    <div class="thankyou-icon">✓</div>
+    <h2>Thank You!</h2>
+    <p id="thankyou-main-message">Your baseline responses have been recorded.</p>
+    <div class="instructions-box" id="group-instructions"></div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// SUPABASE CONFIGURATION - FILL IN YOUR CREDENTIALS BELOW
+// ═══════════════════════════════════════════════════════════
+const SUPABASE_URL = 'YOUR_SUPABASE_PROJECT_URL_HERE';
+const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY_HERE';
+const TABLE_RESPONSES = 'survey_responses';
+const TABLE_PARTICIPANTS = 'participants';
+
+// Initialize Supabase client
+let supabase_client;
+try {
+  if (typeof supabase === 'undefined') {
+    console.error('Supabase library not loaded!');
+    alert('Error: Supabase library failed to load. Please check your internet connection and refresh.');
+  } else if (SUPABASE_URL === 'YOUR_SUPABASE_PROJECT_URL_HERE' || SUPABASE_ANON_KEY === 'YOUR_SUPABASE_ANON_KEY_HERE') {
+    console.error('Supabase credentials not configured!');
+    alert('Error: Supabase credentials not configured. Please contact the researcher.');
+  } else {
+    supabase_client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    console.log('Supabase client initialized successfully');
+  }
+} catch (err) {
+  console.error('Error initializing Supabase:', err);
+  alert('Error initializing database connection. Please contact the researcher.');
+}
+
+// ═══════════════════════════════════════════════════════════
+// GLOBAL STATE
+// ═══════════════════════════════════════════════════════════
+let currentParticipant = null;
+let answered = new Set();
+
+// ═══════════════════════════════════════════════════════════
+// EMAIL ENTRY & PARTICIPANT CHECK
+// ═══════════════════════════════════════════════════════════
+async function checkParticipant() {
+  const emailInput = document.getElementById('email-input');
+  const email = emailInput.value.trim().toLowerCase();
+  
+  if (!email || !email.includes('@')) {
+    document.getElementById('email-error').style.display = 'block';
+    document.getElementById('email-error').textContent = '⚠ Please enter a valid email address';
+    return;
+  }
+
+  try {
+    console.log('Checking for participant:', email);
+    
+    // Check if participant exists
+    const { data, error } = await supabase_client
+      .from(TABLE_PARTICIPANTS)
+      .select('*')
+      .eq('email', email)
+      .single();
+
+    if (error && error.code !== 'PGRST116') {  // PGRST116 = no rows found
+      throw error;
+    }
+
+    if (data) {
+      // Existing participant
+      console.log('Existing participant found:', data);
+      currentParticipant = data;
+      
+      // Check if they've already completed both time points
+      if (data.baseline_completed_at && data.week6_completed_at) {
+        alert('You have already completed both surveys (baseline and week 6). Thank you for your participation!');
+        return;
+      }
+      
+      // Determine time point
+      const timePoint = data.baseline_completed_at ? 'week6' : 'baseline';
+      
+      // Check if trying to do week 6 too early
+      if (timePoint === 'week6') {
+        const baselineDate = new Date(data.baseline_completed_at);
+        const now = new Date();
+        const weeksSince = (now - baselineDate) / (1000 * 60 * 60 * 24 * 7);
+        
+        if (weeksSince < 5.5) {  // Allow slightly early (5.5 weeks instead of 6)
+          alert(`It's too early for your week 6 survey. Please wait until ${new Date(baselineDate.getTime() + 42 * 24 * 60 * 60 * 1000).toLocaleDateString()}. You completed your baseline survey ${Math.floor(weeksSince)} weeks ago.`);
+          return;
+        }
+      }
+      
+      showSurvey(timePoint);
+    } else {
+      // New participant - create record
+      console.log('New participant, creating record...');
+      const newParticipant = await createNewParticipant(email);
+      currentParticipant = newParticipant;
+      showSurvey('baseline');
+    }
+    
+  } catch (err) {
+    console.error('Error checking participant:', err);
+    alert('Error: ' + err.message);
+  }
+}
+
+async function createNewParticipant(email) {
+  // Get next participant ID
+  const { data: existingParticipants, error: countError } = await supabase_client
+    .from(TABLE_PARTICIPANTS)
+    .select('participant_id')
+    .order('created_at', { ascending: false })
+    .limit(1);
+
+  let nextId = 1;
+  if (!countError && existingParticipants && existingParticipants.length > 0) {
+    const lastId = parseInt(existingParticipants[0].participant_id);
+    nextId = lastId + 1;
+  }
+
+  const participantId = String(nextId).padStart(3, '0');  // "001", "002", etc.
+  
+  // Alternate assignment: odd = treatment, even = control
+  const groupAssignment = nextId % 2 === 1 ? 'treatment' : 'control';
+  
+  const newParticipant = {
+    participant_id: participantId,
+    email: email,
+    group_assignment: groupAssignment,
+    created_at: new Date().toISOString()
+  };
+
+  const { data, error } = await supabase_client
+    .from(TABLE_PARTICIPANTS)
+    .insert([newParticipant])
+    .select()
+    .single();
+
+  if (error) throw error;
+
+  console.log('New participant created:', data);
+  return data;
+}
+
+// ═══════════════════════════════════════════════════════════
+// SHOW SURVEY
+// ═══════════════════════════════════════════════════════════
+function showSurvey(timePoint) {
+  document.getElementById('email-screen').style.display = 'none';
+  document.getElementById('survey-view').style.display = 'block';
+  
+  console.log('Showing survey for:', currentParticipant.group_assignment, timePoint);
+  
+  // Show appropriate notices
+  if (timePoint === 'baseline' && currentParticipant.group_assignment === 'treatment') {
+    document.getElementById('intervention-notice').style.display = 'block';
+    document.getElementById('first-time-intro').style.display = 'block';
+    document.getElementById('returning-notice').style.display = 'none';
+  } else if (timePoint === 'week6') {
+    document.getElementById('intervention-notice').style.display = 'none';
+    document.getElementById('first-time-intro').style.display = 'none';
+    document.getElementById('returning-notice').style.display = 'block';
+    document.getElementById('time-point-label').textContent = 'week 6';
+  } else {
+    // Baseline for control group
+    document.getElementById('intervention-notice').style.display = 'none';
+    document.getElementById('first-time-intro').style.display = 'block';
+    document.getElementById('returning-notice').style.display = 'none';
+  }
+  
+  window.scrollTo(0, 0);
+}
+
+// ═══════════════════════════════════════════════════════════
+// PROGRESS TRACKING
+// ═══════════════════════════════════════════════════════════
+function onAnswer(q) {
+  answered.add(q);
+  document.getElementById('card-' + q).classList.add('answered');
+  const done = answered.size;
+  document.getElementById('progress-fill').style.width = (done / 15 * 100) + '%';
+  document.getElementById('progress-label').textContent = done + ' of 15 answered';
+}
+
+// ═══════════════════════════════════════════════════════════
+// SUBMIT FUNCTION
+// ═══════════════════════════════════════════════════════════
+async function submitSurvey() {
+  console.log('Submit button clicked');
+  
+  const qs = ['q1','q2','q3','q4','q5','q6','q7','q8','q9','q10','q11','q12','q13','q14','q15'];
+  const missing = qs.filter(q => !document.querySelector(`input[name="${q}"]:checked`));
+  
+  if (missing.length > 0) {
+    console.log('Missing questions:', missing);
+    document.getElementById('error-msg').style.display = 'block';
+    const firstMissingCard = document.getElementById('card-' + missing[0]);
+    if (firstMissingCard) {
+      firstMissingCard.scrollIntoView({behavior:'smooth',block:'center'});
+    }
+    return;
+  }
+  
+  document.getElementById('error-msg').style.display = 'none';
+
+  // Collect all question values
+  const vals = {};
+  qs.forEach(q => { 
+    const checkedInput = document.querySelector(`input[name="${q}"]:checked`);
+    vals[q] = checkedInput ? parseInt(checkedInput.value) : 0;
+  });
+  
+  console.log('Question values:', vals);
+
+  // Calculate subscales (Q10-Q15 already have reversed values in HTML)
+  const irritability = vals.q1 + vals.q2 + vals.q3 + vals.q4 + vals.q5;
+  const attention = vals.q6 + vals.q7 + vals.q8 + vals.q9 + vals.q10;
+  const social = vals.q11 + vals.q12 + vals.q13 + vals.q14 + vals.q15;
+
+  // Get demographic data (safely handle missing elements)
+  const ageEl = document.getElementById('child-age');
+  const gradeEl = document.getElementById('child-grade');
+  const screenTimeEl = document.getElementById('screen-time');
+  const roleEl = document.getElementById('respondent-role');
+  
+  const age = ageEl ? ageEl.value : null;
+  const grade = gradeEl ? gradeEl.value : '—';
+  const screenTimeRaw = screenTimeEl ? screenTimeEl.value : 'Unknown';
+  const role = roleEl ? roleEl.value : '—';
+  
+  console.log('Demographics:', {age, grade, screenTimeRaw, role});
+  
+  // Screen time midpoint for analysis
+  const screenTimeMid = {
+    'Less than 1 hour': 0.5,
+    '1–2 hours': 1.5,
+    '2–4 hours': 3,
+    '4–6 hours': 5,
+    '6+ hours': 7
+  }[screenTimeRaw] || 0;
+
+  // Determine time point
+  const timePoint = currentParticipant.baseline_completed_at ? 'week6' : 'baseline';
+
+  // Build response object
+  const response = {
+    created_at: new Date().toISOString(),
+    participant_id: currentParticipant.participant_id,
+    time_point: timePoint,
+    age: age ? parseInt(age) : null,
+    grade: grade,
+    screen_time: screenTimeRaw,
+    screen_time_mid: screenTimeMid,
+    role: role,
+    q1: vals.q1, q2: vals.q2, q3: vals.q3, q4: vals.q4, q5: vals.q5,
+    q6: vals.q6, q7: vals.q7, q8: vals.q8, q9: vals.q9, q10: vals.q10,
+    q11: vals.q11, q12: vals.q12, q13: vals.q13, q14: vals.q14, q15: vals.q15,
+    irritability: irritability,
+    attention: attention,
+    social: social,
+    total: irritability + attention + social
+  };
+  
+  console.log('Response object:', response);
+
+  // Save to Supabase
+  try {
+    console.log('Attempting to save to Supabase...');
+    
+    if (!supabase_client) {
+      throw new Error('Database connection not initialized. Please check configuration.');
+    }
+    
+    // Save response
+    const { data: responseData, error: responseError } = await supabase_client
+      .from(TABLE_RESPONSES)
+      .insert([response]);
+
+    if (responseError) {
+      console.error('Response save error:', responseError);
+      throw responseError;
+    }
+
+    // Update participant record
+    const updateData = {};
+    if (timePoint === 'baseline') {
+      updateData.baseline_completed_at = new Date().toISOString();
+      updateData.baseline_screen_time = screenTimeRaw;
+      updateData.baseline_screen_time_mid = screenTimeMid;
+    } else {
+      updateData.week6_completed_at = new Date().toISOString();
+    }
+
+    const { error: updateError } = await supabase_client
+      .from(TABLE_PARTICIPANTS)
+      .update(updateData)
+      .eq('participant_id', currentParticipant.participant_id);
+
+    if (updateError) {
+      console.error('Participant update error:', updateError);
+      throw updateError;
+    }
+
+    console.log('Save successful!');
+
+    // Show thank you screen with appropriate message
+    showThankYou(timePoint);
+
+  } catch (err) {
+    console.error('Supabase Error:', err);
+    alert('Error saving your response: ' + err.message + '\n\nPlease contact the researcher if this problem persists.');
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// THANK YOU SCREEN
+// ═══════════════════════════════════════════════════════════
+function showThankYou(timePoint) {
+  document.getElementById('survey-view').style.display = 'none';
+  const ty = document.getElementById('thankyou-view');
+  ty.style.display = 'flex';
+  ty.style.alignItems = 'center';
+  ty.style.justifyContent = 'center';
+  
+  const mainMsg = document.getElementById('thankyou-main-message');
+  const instructionsBox = document.getElementById('group-instructions');
+  
+  if (timePoint === 'baseline') {
+    mainMsg.textContent = 'Your baseline survey has been recorded. Thank you!';
+    
+    if (currentParticipant.group_assignment === 'treatment') {
+      instructionsBox.innerHTML = `
+        <h3>📋 Next Steps - Treatment Group</h3>
+        <p><strong>Please reduce your child's screen time by 50% for the next 6 weeks.</strong></p>
+        <p>For example, if your child currently uses screens for 4 hours per day, reduce it to 2 hours per day.</p>
+        <p style="margin-top:12px;">We'll send you a reminder in 6 weeks to complete the follow-up survey using the same email address.</p>
+      `;
+    } else {
+      instructionsBox.innerHTML = `
+        <h3>📋 Next Steps - Control Group</h3>
+        <p><strong>Please maintain your child's current screen time habits</strong> for the next 6 weeks.</p>
+        <p style="margin-top:12px;">We'll send you a reminder in 6 weeks to complete the follow-up survey using the same email address.</p>
+      `;
+    }
+  } else {
+    mainMsg.textContent = 'Your week 6 survey has been recorded. Thank you for completing both surveys!';
+    instructionsBox.innerHTML = `
+      <h3>🎉 Study Complete!</h3>
+      <p>You have successfully completed both the baseline and week 6 surveys. Your participation helps us understand the effects of screen time on child behavior.</p>
+      <p style="margin-top:12px;">Thank you for your valuable contribution to this research!</p>
+    `;
+  }
+  
+  window.scrollTo(0, 0);
+}
+</script>
+</body>
+</html>

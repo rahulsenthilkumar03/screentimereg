@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Secure Contact Information</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Mono:wght@400;500&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0d1117; --surface:#161b22; --surface2:#1c2330; --border:#21262d; --border2:#30363d;
+  --text:#e6edf3; --text-muted:#7d8590; --text-dim:#484f58;
+  --accent-yellow:#d29922; --accent-red:#f85149;
+}
+* { box-sizing:border-box; margin:0; padding:0; }
+body { font-family:'Outfit',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px; }
+
+.login-container, .data-container { max-width:600px; width:100%; }
+
+/* LOGIN */
+.login-box { background:var(--surface); border:2px solid var(--accent-yellow); border-radius:16px; padding:40px; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,0.5); }
+.lock-icon { width:60px; height:60px; background:rgba(210,153,34,0.15); border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 20px; font-size:28px; }
+.login-box h1 { font-family:'DM Serif Display',serif; font-size:24px; margin-bottom:8px; color:var(--accent-yellow); }
+.warning-badge { background:rgba(248,81,73,0.15); color:var(--accent-red); padding:8px 16px; border-radius:8px; font-size:13px; font-weight:600; margin:16px 0 24px; display:inline-block; }
+.login-box p { color:var(--text-muted); font-size:14px; margin-bottom:28px; line-height:1.6; }
+.login-box input { width:100%; padding:14px 18px; background:var(--bg); border:2px solid var(--border2); border-radius:10px; color:var(--text); font-family:'DM Mono',monospace; font-size:15px; outline:none; transition:border-color 0.2s; margin-bottom:16px; letter-spacing:2px; }
+.login-box input:focus { border-color:var(--accent-yellow); }
+.btn { width:100%; padding:14px; background:linear-gradient(135deg,#b37d1e,#d29922); color:#fff; border:none; border-radius:10px; font-family:'Outfit',sans-serif; font-size:16px; font-weight:600; cursor:pointer; transition:opacity 0.2s, transform 0.15s; }
+.btn:hover { opacity:0.9; transform:translateY(-1px); }
+.error-msg { color:var(--accent-red); font-size:13px; margin-top:12px; display:none; font-weight:600; }
+
+/* DATA VIEW */
+#data-view { display:none; }
+.header { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:24px 28px; margin-bottom:24px; text-align:center; }
+.header h1 { font-family:'DM Serif Display',serif; font-size:22px; margin-bottom:8px; }
+.header p { color:var(--text-muted); font-size:14px; }
+.count-badge { background:rgba(210,153,34,0.15); color:var(--accent-yellow); padding:6px 14px; border-radius:20px; font-size:12px; font-weight:600; margin-top:12px; display:inline-block; }
+
+.contact-list { background:var(--surface); border:1px solid var(--border); border-radius:16px; overflow:hidden; }
+.contact-item { padding:20px 24px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; transition:background 0.2s; }
+.contact-item:last-child { border-bottom:none; }
+.contact-item:hover { background:rgba(255,255,255,0.02); }
+.contact-id { font-family:'DM Mono',monospace; font-weight:600; color:var(--text); font-size:15px; }
+.contact-group { font-size:11px; padding:4px 10px; border-radius:20px; font-weight:600; text-transform:uppercase; margin-left:12px; }
+.contact-group.control { background:rgba(88,166,255,0.15); color:#58a6ff; }
+.contact-group.treatment { background:rgba(248,81,73,0.15); color:#f85149; }
+.contact-email { font-family:'DM Mono',monospace; color:var(--text-muted); font-size:14px; }
+.contact-status { font-size:12px; color:var(--text-dim); margin-top:4px; }
+
+.empty-state { text-align:center; padding:60px 20px; color:var(--text-dim); }
+.empty-icon { font-size:48px; margin-bottom:16px; opacity:0.4; }
+
+.actions { margin-top:20px; display:flex; gap:12px; }
+.btn-secondary { background:var(--surface2); color:var(--text-muted); border:1px solid var(--border2); }
+.btn-secondary:hover { background:var(--border2); color:var(--text); }
+
+@media(max-width:600px) {
+  .contact-item { flex-direction:column; align-items:flex-start; gap:8px; }
+  .actions { flex-direction:column; }
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-container" id="login-view">
+  <div class="login-box">
+    <div class="lock-icon">🔒</div>
+    <h1>Secure Contact Information</h1>
+    <div class="warning-badge">⚠️ RESTRICTED ACCESS</div>
+    <p>This page contains personally identifiable information (PII). Access is logged for compliance purposes. Enter the secure access password to continue.</p>
+    <input type="password" id="secure-pass" placeholder="Enter secure password" onkeydown="if(event.key==='Enter')doSecureLogin()">
+    <button class="btn" onclick="doSecureLogin()">Access Contact Info</button>
+    <div class="error-msg" id="secure-error">Incorrect password. Access denied.</div>
+  </div>
+</div>
+
+<!-- DATA VIEW -->
+<div class="data-container" id="data-view">
+  <div class="header">
+    <h1>Participant Contact Information</h1>
+    <p>Email addresses for study participants</p>
+    <div class="count-badge" id="participant-count">0 participants</div>
+  </div>
+  
+  <div class="contact-list" id="contact-list"></div>
+  
+  <div class="actions">
+    <button class="btn btn-secondary" onclick="exportContacts()">⬇ Export CSV</button>
+    <button class="btn btn-secondary" onclick="window.close()">✕ Close Window</button>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// CONFIGURATION - MUST MATCH YOUR DASHBOARD
+// ═══════════════════════════════════════════════════════════
+const SUPABASE_URL = 'YOUR_SUPABASE_PROJECT_URL_HERE';
+const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY_HERE';
+const TABLE_PARTICIPANTS = 'participants';
+const SECURE_PASSWORD = 'contact2024';  // CHANGE THIS to a different password
+
+// Initialize Supabase
+let supabase_client;
+try {
+  if (typeof supabase !== 'undefined' && 
+      SUPABASE_URL !== 'YOUR_SUPABASE_PROJECT_URL_HERE' && 
+      SUPABASE_ANON_KEY !== 'YOUR_SUPABASE_ANON_KEY_HERE') {
+    supabase_client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    console.log('Supabase initialized');
+  } else {
+    console.error('Supabase not configured');
+  }
+} catch (err) {
+  console.error('Error:', err);
+}
+
+let participantsData = [];
+
+// ═══════════════════════════════════════════════════════════
+// LOGIN
+// ═══════════════════════════════════════════════════════════
+function doSecureLogin() {
+  const password = document.getElementById('secure-pass').value;
+  
+  if (password === SECURE_PASSWORD) {
+    document.getElementById('login-view').style.display = 'none';
+    document.getElementById('data-view').style.display = 'block';
+    loadContacts();
+    
+    // Log access (optional - you could save this to a separate table)
+    console.log('Contact info accessed:', new Date().toISOString());
+  } else {
+    document.getElementById('secure-error').style.display = 'block';
+    document.getElementById('secure-pass').value = '';
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// LOAD CONTACTS
+// ═══════════════════════════════════════════════════════════
+async function loadContacts() {
+  try {
+    if (!supabase_client) {
+      throw new Error('Database not initialized');
+    }
+
+    const { data, error } = await supabase_client
+      .from(TABLE_PARTICIPANTS)
+      .select('*')
+      .order('participant_id', { ascending: true });
+
+    if (error) throw error;
+
+    participantsData = data;
+    renderContacts(data);
+    
+  } catch (err) {
+    console.error('Error loading contacts:', err);
+    alert('Error loading data: ' + err.message);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// RENDER CONTACTS
+// ═══════════════════════════════════════════════════════════
+function renderContacts(participants) {
+  const list = document.getElementById('contact-list');
+  const count = document.getElementById('participant-count');
+  
+  count.textContent = participants.length + ' participant' + (participants.length !== 1 ? 's' : '');
+  
+  if (participants.length === 0) {
+    list.innerHTML = '<div class="empty-state"><div class="empty-icon">📭</div><p>No participants yet</p></div>';
+    return;
+  }
+
+  list.innerHTML = participants.map(p => {
+    const baselineStatus = p.baseline_completed_at ? '✓ Baseline' : '○ Baseline';
+    const week6Status = p.week6_completed_at ? '✓ Week 6' : '○ Week 6';
+    
+    return `
+    <div class="contact-item">
+      <div>
+        <div>
+          <span class="contact-id">ID ${p.participant_id}</span>
+          <span class="contact-group ${p.group_assignment}">${p.group_assignment}</span>
+        </div>
+        <div class="contact-email">${p.email}</div>
+        <div class="contact-status">${baselineStatus} · ${week6Status}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════
+// EXPORT
+// ═══════════════════════════════════════════════════════════
+function exportContacts() {
+  if (participantsData.length === 0) {
+    alert('No data to export');
+    return;
+  }
+
+  const headers = ['Participant_ID','Email','Group','Baseline_Completed','Week6_Completed','Enrolled_Date'];
+  const rows = participantsData.map(p => [
+    p.participant_id,
+    p.email,
+    p.group_assignment,
+    p.baseline_completed_at || '',
+    p.week6_completed_at || '',
+    p.created_at
+  ]);
+
+  const csv = [headers,...rows].map(row => row.map(v => `"${v}"`).join(',')).join('\n');
+  const blob = new Blob([csv], {type:'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'participant_contacts_' + new Date().toISOString().split('T')[0] + '.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+</script>
+</body>
+</html>
