@@ -94,8 +94,46 @@
 </head>
 <body>
 
+<!-- INTRODUCTION SCREEN -->
+<div id="intro-screen">
+  <div class="survey-header">
+    <div class="header-badge">Child Wellness Research Study</div>
+    <h1>Understanding Screen Time & Child Development</h1>
+    <p>A 6-week intervention study on digital habits and behavior</p>
+  </div>
+  <div class="survey-body email-entry-screen">
+    <div class="email-card" style="text-align:left;">
+      <h2 style="text-align:center; margin-bottom:20px;">Welcome to Our Research</h2>
+      
+      <p style="margin-bottom:16px; line-height:1.8;">
+        Thank you for your interest in participating in this important research study. This project aims to <strong>determine the potential benefits that proper screen time regulation can have on the developing mind in early childhood</strong> and to find effective ways to monitor it.
+      </p>
+      
+      <p style="margin-bottom:16px; line-height:1.8;">
+        By participating, you'll be contributing valuable data that will help us better understand how screen time impacts children's behavior, attention, and social development. This is a <strong>6-week study</strong> where you'll complete two short surveys—one at the beginning and one after six weeks.
+      </p>
+      
+      <div style="background:var(--terracotta-pale); border:1px solid var(--terracotta-light); border-radius:12px; padding:20px; margin:20px 0;">
+        <p style="font-size:14px; color:var(--text-dark); margin-bottom:8px;">
+          <strong style="color:var(--terracotta);">Research Mentor:</strong>
+        </p>
+        <p style="font-size:14px; color:var(--text-dark); line-height:1.6;">
+          Dr. Daniel K. Horton<br>
+          <em>Board Certified Neuropsychologist, Dallas, Texas</em>
+        </p>
+      </div>
+      
+      <p style="margin-bottom:24px; line-height:1.8; font-size:14px; color:var(--text-mid);">
+        Your participation is voluntary and all responses are confidential. The survey takes approximately 5-7 minutes to complete.
+      </p>
+      
+      <button class="submit-btn" onclick="showEmailEntry()" style="width:100%;">Continue to Study</button>
+    </div>
+  </div>
+</div>
+
 <!-- EMAIL ENTRY SCREEN -->
-<div id="email-screen">
+<div id="email-screen" style="display:none;">
   <div class="survey-header">
     <div class="header-badge">Child Wellness Survey</div>
     <h1>Welcome to the Study</h1>
@@ -406,6 +444,15 @@ try {
 // ═══════════════════════════════════════════════════════════
 let currentParticipant = null;
 let answered = new Set();
+
+// ═══════════════════════════════════════════════════════════
+// SCREEN TRANSITIONS
+// ═══════════════════════════════════════════════════════════
+function showEmailEntry() {
+  document.getElementById('intro-screen').style.display = 'none';
+  document.getElementById('email-screen').style.display = 'block';
+  window.scrollTo(0, 0);
+}
 
 // ═══════════════════════════════════════════════════════════
 // EMAIL ENTRY & PARTICIPANT CHECK
