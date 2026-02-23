@@ -82,7 +82,7 @@ body { font-family:'Outfit',sans-serif; background:var(--bg); color:var(--text);
 @media(max-width:900px) { .chart-card.wide { grid-column:span 1; } }
 
 /* PARTICIPANT CARDS */
-.participant-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:18px; }
+.participant-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(400px,1fr)); gap:18px; }
 .participant-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; overflow:hidden; transition:all 0.2s; animation:fadeUp 0.4s ease both; }
 @keyframes fadeUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
 .participant-card:hover { border-color:var(--border2); box-shadow:0 8px 24px rgba(0,0,0,0.3); }
@@ -101,6 +101,35 @@ body { font-family:'Outfit',sans-serif; background:var(--bg); color:var(--text);
 .status-dot.complete { background:var(--accent-soc); }
 .status-dot.incomplete { background:var(--text-dim); }
 .status-label { font-size:11px; color:var(--text-muted); }
+
+/* ITEM-LEVEL RESPONSES */
+.card-scores { padding:16px 20px; border-top:1px solid var(--border); }
+.score-row { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+.score-row:last-child { margin-bottom:0; }
+.score-name { font-size:11px; color:var(--text-muted); text-transform:uppercase; min-width:80px; }
+.score-track { flex:1; height:8px; background:var(--bg); border-radius:4px; overflow:hidden; position:relative; }
+.score-fill { height:100%; border-radius:4px; transition:width 0.3s; }
+.score-fill.fill-irr { background:linear-gradient(90deg,rgba(248,81,73,0.4),var(--accent-irr)); }
+.score-fill.fill-att { background:linear-gradient(90deg,rgba(88,166,255,0.4),var(--accent-att)); }
+.score-fill.fill-soc { background:linear-gradient(90deg,rgba(63,185,80,0.4),var(--accent-soc)); }
+.score-fill.fill-total { background:linear-gradient(90deg,rgba(188,140,255,0.4),var(--accent-purple)); }
+.score-num { font-family:'DM Mono',monospace; font-size:13px; color:var(--text); font-weight:600; min-width:50px; text-align:right; }
+
+.card-items { padding:16px 20px; border-top:1px solid var(--border); }
+.items-label { font-size:10px; text-transform:uppercase; letter-spacing:1px; color:var(--text-dim); margin-bottom:10px; font-weight:600; }
+.items-grid { display:grid; grid-template-columns:repeat(15,1fr); gap:6px; }
+.item-dot { width:100%; aspect-ratio:1; border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:700; position:relative; cursor:pointer; transition:transform 0.15s; border:1px solid rgba(255,255,255,0.1); }
+.item-dot:hover { transform:scale(1.15); z-index:10; }
+.item-dot.dot-1 { background:rgba(63,185,80,0.3); color:#3fb950; border-color:#3fb950; }
+.item-dot.dot-2 { background:rgba(88,166,255,0.3); color:#58a6ff; border-color:#58a6ff; }
+.item-dot.dot-3 { background:rgba(210,153,34,0.3); color:#d29922; border-color:#d29922; }
+.item-dot.dot-4 { background:rgba(255,166,87,0.3); color:#ffa657; border-color:#ffa657; }
+.item-dot.dot-5 { background:rgba(248,81,73,0.3); color:#f85149; border-color:#f85149; }
+.item-q { position:absolute; top:-16px; left:50%; transform:translateX(-50%); font-size:8px; color:var(--text-dim); white-space:nowrap; opacity:0; transition:opacity 0.2s; }
+.item-dot:hover .item-q { opacity:1; }
+.items-section-label { font-size:9px; color:var(--text-dim); }
+.timepoint-separator { margin:12px 0; padding:8px 0; border-top:1px dashed var(--border); }
+.timepoint-label { font-size:10px; font-weight:700; text-transform:uppercase; color:var(--accent-yellow); letter-spacing:1px; }
 
 /* PAIRED ANALYSIS */
 .paired-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:24px; margin-bottom:20px; }
@@ -502,9 +531,81 @@ function renderParticipants(participants) {
     return;
   }
 
+  const qLabels = ['Q1','Q2','Q3','Q4','Q5','Q6','Q7','Q8','Q9','Q10','Q11','Q12','Q13','Q14','Q15'];
+
   grid.innerHTML = participants.map((p, i) => {
     const baselineDone = p.baseline_completed_at ? 'complete' : 'incomplete';
     const week6Done = p.week6_completed_at ? 'complete' : 'incomplete';
+    
+    // Find responses for this participant
+    const baselineResp = cachedResponses.find(r => r.participant_id === p.participant_id && r.time_point === 'baseline');
+    const week6Resp = cachedResponses.find(r => r.participant_id === p.participant_id && r.time_point === 'week6');
+    
+    // Build score bars HTML
+    let scoresHtml = '';
+    if (baselineResp) {
+      scoresHtml = `
+        <div class="card-scores">
+          <div class="score-row">
+            <span class="score-name">Irritability</span>
+            <div class="score-track"><div class="score-fill fill-irr" style="width:${baselineResp.irritability/25*100}%"></div></div>
+            <span class="score-num">${baselineResp.irritability}<span style="color:var(--text-dim)">/25</span></span>
+          </div>
+          <div class="score-row">
+            <span class="score-name">Attention</span>
+            <div class="score-track"><div class="score-fill fill-att" style="width:${baselineResp.attention/25*100}%"></div></div>
+            <span class="score-num">${baselineResp.attention}<span style="color:var(--text-dim)">/25</span></span>
+          </div>
+          <div class="score-row">
+            <span class="score-name">Social</span>
+            <div class="score-track"><div class="score-fill fill-soc" style="width:${baselineResp.social/25*100}%"></div></div>
+            <span class="score-num">${baselineResp.social}<span style="color:var(--text-dim)">/25</span></span>
+          </div>
+          <div class="score-row">
+            <span class="score-name">Total</span>
+            <div class="score-track"><div class="score-fill fill-total" style="width:${baselineResp.total/75*100}%"></div></div>
+            <span class="score-num">${baselineResp.total}<span style="color:var(--text-dim)">/75</span></span>
+          </div>
+        </div>`;
+    }
+    
+    // Build item-level responses HTML
+    let itemsHtml = '';
+    if (baselineResp) {
+      const qVals = [baselineResp.q1,baselineResp.q2,baselineResp.q3,baselineResp.q4,baselineResp.q5,
+                     baselineResp.q6,baselineResp.q7,baselineResp.q8,baselineResp.q9,baselineResp.q10,
+                     baselineResp.q11,baselineResp.q12,baselineResp.q13,baselineResp.q14,baselineResp.q15];
+      const dotHtml = qVals.map((v,qi) => `<div class="item-dot dot-${v}"><span class="item-q">${qLabels[qi]}</span>${v}</div>`).join('');
+      
+      itemsHtml = `
+        <div class="card-items">
+          <div class="items-label">BASELINE Item-level Responses (Q1–Q15)</div>
+          <div class="items-grid">${dotHtml}</div>
+          <div style="display:flex;justify-content:space-between;margin-top:8px;">
+            <span class="items-section-label">Irr (Q1-5) · Att (Q6-10) · Soc (Q11-15)</span>
+          </div>
+        </div>`;
+      
+      // Add week 6 responses if they exist
+      if (week6Resp) {
+        const qVals6 = [week6Resp.q1,week6Resp.q2,week6Resp.q3,week6Resp.q4,week6Resp.q5,
+                       week6Resp.q6,week6Resp.q7,week6Resp.q8,week6Resp.q9,week6Resp.q10,
+                       week6Resp.q11,week6Resp.q12,week6Resp.q13,week6Resp.q14,week6Resp.q15];
+        const dotHtml6 = qVals6.map((v,qi) => `<div class="item-dot dot-${v}"><span class="item-q">${qLabels[qi]}</span>${v}</div>`).join('');
+        
+        itemsHtml += `
+          <div class="card-items" style="border-top:none; padding-top:0;">
+            <div class="timepoint-separator">
+              <div class="timepoint-label">WEEK 6</div>
+            </div>
+            <div class="items-label">WEEK 6 Item-level Responses (Q1–Q15)</div>
+            <div class="items-grid">${dotHtml6}</div>
+            <div style="display:flex;justify-content:space-between;margin-top:8px;">
+              <span class="items-section-label">Irr (Q1-5) · Att (Q6-10) · Soc (Q11-15)</span>
+            </div>
+          </div>`;
+      }
+    }
     
     return `
     <div class="participant-card" style="animation-delay:${i*0.03}s">
@@ -542,6 +643,8 @@ function renderParticipants(participants) {
           </div>
         </div>
       </div>
+      ${scoresHtml}
+      ${itemsHtml}
     </div>`;
   }).join('');
 }
