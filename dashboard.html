@@ -146,7 +146,7 @@ body { font-family:'Outfit',sans-serif; background:var(--bg); color:var(--text);
 .arrow { font-size:24px; color:var(--text-muted); }
 
 /* TABLE */
-.table-wrap { background:var(--surface); border:1px solid var(--border); border-radius:14px; overflow:hidden; margin-top:8px; }
+.table-wrap { background:var(--surface); border:1px solid var(--border); border-radius:14px; overflow-x:auto; overflow-y:auto; max-height:600px; margin-top:8px; }
 .data-table { width:100%; border-collapse:collapse; font-size:13px; }
 .data-table thead tr { background:var(--surface2); border-bottom:1px solid var(--border); }
 .data-table th { padding:13px 16px; text-align:left; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:var(--text-muted); white-space:nowrap; }
@@ -203,6 +203,7 @@ body { font-family:'Outfit',sans-serif; background:var(--bg); color:var(--text);
       <button class="top-btn" onclick="refreshAll()">↻ Refresh</button>
       <button class="top-btn secure" onclick="window.open('contact_info.html', '_blank')">🔒 Contact Info</button>
       <button class="top-btn primary" onclick="doExport()">⬇ Export CSV</button>
+      <button class="top-btn danger" onclick="clearAllData()">🗑 Clear All Data</button>
     </div>
   </div>
 
@@ -1173,6 +1174,46 @@ function doExport() {
   a.download = 'screen_time_study_' + new Date().toISOString().split('T')[0] + '.csv';
   a.click();
   URL.revokeObjectURL(url);
+}
+
+// ═══════════════════════════════════════════════════════════
+// CLEAR ALL DATA
+// ═══════════════════════════════════════════════════════════
+async function clearAllData() {
+  const confirmMsg = 'Are you sure you want to DELETE ALL DATA?\n\nThis will permanently delete:\n- All participants\n- All survey responses\n\nThis action CANNOT be undone!\n\nType "DELETE" to confirm:';
+  const userInput = prompt(confirmMsg);
+  
+  if (userInput !== 'DELETE') {
+    alert('Data deletion cancelled.');
+    return;
+  }
+
+  try {
+    if (!supabase_client) throw new Error('Database not initialized');
+
+    // Delete all responses first (due to foreign key)
+    const { error: responseError } = await supabase_client
+      .from(TABLE_RESPONSES)
+      .delete()
+      .neq('id', 0); // Delete all rows
+
+    if (responseError) throw responseError;
+
+    // Delete all participants
+    const { error: participantError } = await supabase_client
+      .from(TABLE_PARTICIPANTS)
+      .delete()
+      .neq('id', 0); // Delete all rows
+
+    if (participantError) throw participantError;
+
+    alert('All data has been permanently deleted.');
+    refreshAll();
+
+  } catch (err) {
+    console.error('Error clearing data:', err);
+    alert('Error deleting data: ' + err.message);
+  }
 }
 </script>
 </body>
