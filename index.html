@@ -94,26 +94,55 @@
 </head>
 <body>
 
-<!-- EMAIL ENTRY SCREEN -->
-<div id="email-screen">
+<!-- INTRODUCTION SCREEN -->
+<div id="intro-screen">
   <div class="survey-header">
     <div class="header-badge">Child Wellness Research Study</div>
     <h1>Understanding Screen Time & Child Development</h1>
-    <p>A 6-week research study examining screen time and child behavior</p>
+    <p>A 6-week intervention study on digital habits and behavior</p>
   </div>
-  
+  <div class="survey-body email-entry-screen">
+    <div class="email-card" style="text-align:left;">
+      <h2 style="text-align:center; margin-bottom:20px;">Welcome to Our Research</h2>
+      
+      <p style="margin-bottom:16px; line-height:1.8;">
+        Thank you for your interest in participating in this important research study. This project aims to <strong>determine the potential benefits that proper screen time regulation can have on the developing mind in early childhood</strong> and to find effective ways to monitor it.
+      </p>
+      
+      <p style="margin-bottom:16px; line-height:1.8;">
+        By participating, you'll be contributing valuable data that will help us better understand how screen time impacts children's behavior, attention, and social development. This is a <strong>6-week study</strong> where you'll complete two short surveys—one at the beginning and one after six weeks.
+      </p>
+      
+      <div style="background:var(--terracotta-pale); border:1px solid var(--terracotta-light); border-radius:12px; padding:20px; margin:20px 0;">
+        <p style="font-size:14px; color:var(--text-dark); margin-bottom:8px;">
+          <strong style="color:var(--terracotta);">Research Mentor:</strong>
+        </p>
+        <p style="font-size:14px; color:var(--text-dark); line-height:1.6;">
+          Dr. Daniel K. Horton<br>
+          <em>Board Certified Neuropsychologist, Dallas, Texas</em>
+        </p>
+      </div>
+      
+      <p style="margin-bottom:24px; line-height:1.8; font-size:14px; color:var(--text-mid);">
+        Your participation is voluntary and all responses are confidential. The survey takes approximately 5-7 minutes to complete.
+      </p>
+      
+      <button class="submit-btn" onclick="showEmailEntry()" style="width:100%;">Continue to Study</button>
+    </div>
+  </div>
+</div>
+
+<!-- EMAIL ENTRY SCREEN -->
+<div id="email-screen" style="display:none;">
+  <div class="survey-header">
+    <div class="header-badge">Child Wellness Survey</div>
+    <h1>Welcome to the Study</h1>
+    <p>This is a 6-week pre-post intervention study on screen time and child behavior</p>
+  </div>
   <div class="survey-body email-entry-screen">
     <div class="email-card">
-      <h2>Welcome to Our Research</h2>
-      <p class="subtitle" style="text-align:left; line-height:1.7; margin-bottom:20px;">
-        This research aims to determine the potential benefits that proper screen time regulation can have on the developing mind in early childhood and to find effective ways to monitor it. This is a 6-week study where you'll complete two short surveys.
-      </p>
-      <p class="subtitle" style="text-align:left; font-size:13px; color:var(--text-mid); margin-bottom:20px; padding:12px; background:var(--terracotta-pale); border-radius:8px;">
-        <strong>Principal Investigator:</strong> Rahul Senthil Kumar Ketharidevi<br>
-        <em>Mentored by Daniel Horton, PhD, ABPP</em><br>
-        <span style="font-size:12px;">Board Certified in Clinical Neuropsychology</span>
-      </p>
-      <p class="subtitle" style="margin-bottom:24px;">Please enter your email address to begin or continue the survey</p>
+      <h2>Let's Get Started</h2>
+      <p class="subtitle">Please enter your email address to begin or continue the survey</p>
       <input type="email" id="email-input" class="email-input" placeholder="your.email@example.com" required>
       <button class="submit-btn" onclick="checkParticipant()">Continue</button>
       <div class="error-msg" id="email-error"></div>
@@ -385,10 +414,10 @@
 
 <script>
 // ═══════════════════════════════════════════════════════════
-// SUPABASE CONFIGURATION
+// SUPABASE CONFIGURATION - FILL IN YOUR CREDENTIALS BELOW
 // ═══════════════════════════════════════════════════════════
-const SUPABASE_URL = 'https://dnsmotitaboibecdjzlx.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuc21vdGl0YWJvaWJlY2Rqemx4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE0NjYzNTQsImV4cCI6MjA4NzA0MjM1NH0.f5QrgqH5kbIWmArXgWixA_ZetLZOqYg7iObskLfH6OI';
+const SUPABASE_URL = 'YOUR_SUPABASE_PROJECT_URL_HERE';
+const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY_HERE';
 const TABLE_RESPONSES = 'survey_responses';
 const TABLE_PARTICIPANTS = 'participants';
 
@@ -397,12 +426,17 @@ let supabase_client;
 try {
   if (typeof supabase === 'undefined') {
     console.error('Supabase library not loaded!');
+    alert('Error: Supabase library failed to load. Please check your internet connection and refresh.');
+  } else if (SUPABASE_URL === 'YOUR_SUPABASE_PROJECT_URL_HERE' || SUPABASE_ANON_KEY === 'YOUR_SUPABASE_ANON_KEY_HERE') {
+    console.error('Supabase credentials not configured!');
+    alert('Error: Supabase credentials not configured. Please contact the researcher.');
   } else {
     supabase_client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    console.log('Supabase initialized');
+    console.log('Supabase client initialized successfully');
   }
 } catch (err) {
   console.error('Error initializing Supabase:', err);
+  alert('Error initializing database connection. Please contact the researcher.');
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -410,6 +444,15 @@ try {
 // ═══════════════════════════════════════════════════════════
 let currentParticipant = null;
 let answered = new Set();
+
+// ═══════════════════════════════════════════════════════════
+// SCREEN TRANSITIONS
+// ═══════════════════════════════════════════════════════════
+function showEmailEntry() {
+  document.getElementById('intro-screen').style.display = 'none';
+  document.getElementById('email-screen').style.display = 'block';
+  window.scrollTo(0, 0);
+}
 
 // ═══════════════════════════════════════════════════════════
 // EMAIL ENTRY & PARTICIPANT CHECK
@@ -425,80 +468,108 @@ async function checkParticipant() {
   }
 
   try {
+    console.log('Checking for participant:', email);
+    
+    // Check if participant exists
     const { data, error } = await supabase_client
       .from(TABLE_PARTICIPANTS)
       .select('*')
       .eq('email', email)
       .single();
 
-    if (error && error.code !== 'PGRST116') throw error;
+    if (error && error.code !== 'PGRST116') {  // PGRST116 = no rows found
+      throw error;
+    }
 
     if (data) {
+      // Existing participant
+      console.log('Existing participant found:', data);
       currentParticipant = data;
       
+      // Check if they've already completed both time points
       if (data.baseline_completed_at && data.week6_completed_at) {
-        alert('You have already completed both surveys. Thank you!');
+        alert('You have already completed both surveys (baseline and week 6). Thank you for your participation!');
         return;
       }
       
+      // Determine time point
       const timePoint = data.baseline_completed_at ? 'week6' : 'baseline';
       
+      // Check if trying to do week 6 too early
       if (timePoint === 'week6') {
         const baselineDate = new Date(data.baseline_completed_at);
-        const weeksSince = (new Date() - baselineDate) / (1000 * 60 * 60 * 24 * 7);
+        const now = new Date();
+        const weeksSince = (now - baselineDate) / (1000 * 60 * 60 * 24 * 7);
         
-        if (weeksSince < 5.5) {
-          alert(`Too early for week 6 survey. Please wait until ${new Date(baselineDate.getTime() + 42 * 24 * 60 * 60 * 1000).toLocaleDateString()}.`);
+        if (weeksSince < 5.5) {  // Allow slightly early (5.5 weeks instead of 6)
+          alert(`It's too early for your week 6 survey. Please wait until ${new Date(baselineDate.getTime() + 42 * 24 * 60 * 60 * 1000).toLocaleDateString()}. You completed your baseline survey ${Math.floor(weeksSince)} weeks ago.`);
           return;
         }
       }
       
       showSurvey(timePoint);
     } else {
+      // New participant - create record
+      console.log('New participant, creating record...');
       const newParticipant = await createNewParticipant(email);
       currentParticipant = newParticipant;
       showSurvey('baseline');
     }
+    
   } catch (err) {
-    console.error('Error:', err);
+    console.error('Error checking participant:', err);
     alert('Error: ' + err.message);
   }
 }
 
 async function createNewParticipant(email) {
-  const { data: existing } = await supabase_client
+  // Get next participant ID
+  const { data: existingParticipants, error: countError } = await supabase_client
     .from(TABLE_PARTICIPANTS)
     .select('participant_id')
     .order('created_at', { ascending: false })
     .limit(1);
 
   let nextId = 1;
-  if (existing && existing.length > 0) {
-    nextId = parseInt(existing[0].participant_id) + 1;
+  if (!countError && existingParticipants && existingParticipants.length > 0) {
+    const lastId = parseInt(existingParticipants[0].participant_id);
+    nextId = lastId + 1;
   }
 
-  const participantId = String(nextId).padStart(3, '0');
+  const participantId = String(nextId).padStart(3, '0');  // "001", "002", etc.
+  
+  // Alternate assignment: odd = treatment, even = control
   const groupAssignment = nextId % 2 === 1 ? 'treatment' : 'control';
   
+  const newParticipant = {
+    participant_id: participantId,
+    email: email,
+    group_assignment: groupAssignment,
+    created_at: new Date().toISOString()
+  };
+
   const { data, error } = await supabase_client
     .from(TABLE_PARTICIPANTS)
-    .insert([{
-      participant_id: participantId,
-      email: email,
-      group_assignment: groupAssignment,
-      created_at: new Date().toISOString()
-    }])
+    .insert([newParticipant])
     .select()
     .single();
 
   if (error) throw error;
+
+  console.log('New participant created:', data);
   return data;
 }
 
+// ═══════════════════════════════════════════════════════════
+// SHOW SURVEY
+// ═══════════════════════════════════════════════════════════
 function showSurvey(timePoint) {
   document.getElementById('email-screen').style.display = 'none';
   document.getElementById('survey-view').style.display = 'block';
   
+  console.log('Showing survey for:', currentParticipant.group_assignment, timePoint);
+  
+  // Show appropriate notices
   if (timePoint === 'baseline' && currentParticipant.group_assignment === 'treatment') {
     document.getElementById('intervention-notice').style.display = 'block';
     document.getElementById('first-time-intro').style.display = 'block';
@@ -507,7 +578,9 @@ function showSurvey(timePoint) {
     document.getElementById('intervention-notice').style.display = 'none';
     document.getElementById('first-time-intro').style.display = 'none';
     document.getElementById('returning-notice').style.display = 'block';
+    document.getElementById('time-point-label').textContent = 'week 6';
   } else {
+    // Baseline for control group
     document.getElementById('intervention-notice').style.display = 'none';
     document.getElementById('first-time-intro').style.display = 'block';
     document.getElementById('returning-notice').style.display = 'none';
@@ -516,6 +589,9 @@ function showSurvey(timePoint) {
   window.scrollTo(0, 0);
 }
 
+// ═══════════════════════════════════════════════════════════
+// PROGRESS TRACKING
+// ═══════════════════════════════════════════════════════════
 function onAnswer(q) {
   answered.add(q);
   document.getElementById('card-' + q).classList.add('answered');
@@ -524,35 +600,72 @@ function onAnswer(q) {
   document.getElementById('progress-label').textContent = done + ' of 15 answered';
 }
 
+// ═══════════════════════════════════════════════════════════
+// SUBMIT FUNCTION
+// ═══════════════════════════════════════════════════════════
 async function submitSurvey() {
+  console.log('Submit button clicked');
+  
   const qs = ['q1','q2','q3','q4','q5','q6','q7','q8','q9','q10','q11','q12','q13','q14','q15'];
   const missing = qs.filter(q => !document.querySelector(`input[name="${q}"]:checked`));
   
   if (missing.length > 0) {
+    console.log('Missing questions:', missing);
     document.getElementById('error-msg').style.display = 'block';
-    document.getElementById('card-' + missing[0]).scrollIntoView({behavior:'smooth',block:'center'});
+    const firstMissingCard = document.getElementById('card-' + missing[0]);
+    if (firstMissingCard) {
+      firstMissingCard.scrollIntoView({behavior:'smooth',block:'center'});
+    }
     return;
   }
   
   document.getElementById('error-msg').style.display = 'none';
 
+  // Collect all question values
   const vals = {};
   qs.forEach(q => { 
-    vals[q] = parseInt(document.querySelector(`input[name="${q}"]:checked`).value);
+    const checkedInput = document.querySelector(`input[name="${q}"]:checked`);
+    vals[q] = checkedInput ? parseInt(checkedInput.value) : 0;
   });
+  
+  console.log('Question values:', vals);
 
+  // Calculate subscales with reverse scoring for positive items (Q10-Q15)
+  // Irritability: Q1-Q5 (all negative items, no reversal)
   const irritability = vals.q1 + vals.q2 + vals.q3 + vals.q4 + vals.q5;
+  
+  // Attention: Q6-Q9 (negative) + Q10 (positive, needs reversal)
   const attention = vals.q6 + vals.q7 + vals.q8 + vals.q9 + (6 - vals.q10);
+  
+  // Social: Q11-Q15 (all positive items, all need reversal)
   const social = (6 - vals.q11) + (6 - vals.q12) + (6 - vals.q13) + (6 - vals.q14) + (6 - vals.q15);
 
-  const age = document.getElementById('child-age').value;
-  const grade = document.getElementById('child-grade').value || '—';
-  const screenTimeRaw = document.getElementById('screen-time').value || 'Unknown';
-  const role = document.getElementById('respondent-role').value || '—';
+  // Get demographic data (safely handle missing elements)
+  const ageEl = document.getElementById('child-age');
+  const gradeEl = document.getElementById('child-grade');
+  const screenTimeEl = document.getElementById('screen-time');
+  const roleEl = document.getElementById('respondent-role');
   
-  const screenTimeMid = {'Less than 1 hour':0.5,'1–2 hours':1.5,'2–4 hours':3,'4–6 hours':5,'6+ hours':7}[screenTimeRaw] || 0;
+  const age = ageEl ? ageEl.value : null;
+  const grade = gradeEl ? gradeEl.value : '—';
+  const screenTimeRaw = screenTimeEl ? screenTimeEl.value : 'Unknown';
+  const role = roleEl ? roleEl.value : '—';
+  
+  console.log('Demographics:', {age, grade, screenTimeRaw, role});
+  
+  // Screen time midpoint for analysis
+  const screenTimeMid = {
+    'Less than 1 hour': 0.5,
+    '1–2 hours': 1.5,
+    '2–4 hours': 3,
+    '4–6 hours': 5,
+    '6+ hours': 7
+  }[screenTimeRaw] || 0;
+
+  // Determine time point
   const timePoint = currentParticipant.baseline_completed_at ? 'week6' : 'baseline';
 
+  // Build response object
   const response = {
     created_at: new Date().toISOString(),
     participant_id: currentParticipant.participant_id,
@@ -562,19 +675,36 @@ async function submitSurvey() {
     screen_time: screenTimeRaw,
     screen_time_mid: screenTimeMid,
     role: role,
-    q1:vals.q1,q2:vals.q2,q3:vals.q3,q4:vals.q4,q5:vals.q5,
-    q6:vals.q6,q7:vals.q7,q8:vals.q8,q9:vals.q9,q10:vals.q10,
-    q11:vals.q11,q12:vals.q12,q13:vals.q13,q14:vals.q14,q15:vals.q15,
+    q1: vals.q1, q2: vals.q2, q3: vals.q3, q4: vals.q4, q5: vals.q5,
+    q6: vals.q6, q7: vals.q7, q8: vals.q8, q9: vals.q9, q10: vals.q10,
+    q11: vals.q11, q12: vals.q12, q13: vals.q13, q14: vals.q14, q15: vals.q15,
     irritability: irritability,
     attention: attention,
     social: social,
     total: irritability + attention + social
   };
+  
+  console.log('Response object:', response);
 
+  // Save to Supabase
   try {
-    const { error: responseError } = await supabase_client.from(TABLE_RESPONSES).insert([response]);
-    if (responseError) throw responseError;
+    console.log('Attempting to save to Supabase...');
+    
+    if (!supabase_client) {
+      throw new Error('Database connection not initialized. Please check configuration.');
+    }
+    
+    // Save response
+    const { data: responseData, error: responseError } = await supabase_client
+      .from(TABLE_RESPONSES)
+      .insert([response]);
 
+    if (responseError) {
+      console.error('Response save error:', responseError);
+      throw responseError;
+    }
+
+    // Update participant record
     const updateData = {};
     if (timePoint === 'baseline') {
       updateData.baseline_completed_at = new Date().toISOString();
@@ -589,19 +719,31 @@ async function submitSurvey() {
       .update(updateData)
       .eq('participant_id', currentParticipant.participant_id);
 
-    if (updateError) throw updateError;
+    if (updateError) {
+      console.error('Participant update error:', updateError);
+      throw updateError;
+    }
 
+    console.log('Save successful!');
+
+    // Show thank you screen with appropriate message
     showThankYou(timePoint);
+
   } catch (err) {
-    console.error('Error:', err);
-    alert('Error saving: ' + err.message);
+    console.error('Supabase Error:', err);
+    alert('Error saving your response: ' + err.message + '\n\nPlease contact the researcher if this problem persists.');
   }
 }
 
+// ═══════════════════════════════════════════════════════════
+// THANK YOU SCREEN
+// ═══════════════════════════════════════════════════════════
 function showThankYou(timePoint) {
   document.getElementById('survey-view').style.display = 'none';
   const ty = document.getElementById('thankyou-view');
   ty.style.display = 'flex';
+  ty.style.alignItems = 'center';
+  ty.style.justifyContent = 'center';
   
   const mainMsg = document.getElementById('thankyou-main-message');
   const instructionsBox = document.getElementById('group-instructions');
@@ -610,13 +752,26 @@ function showThankYou(timePoint) {
     mainMsg.textContent = 'Your baseline survey has been recorded. Thank you!';
     
     if (currentParticipant.group_assignment === 'treatment') {
-      instructionsBox.innerHTML = '<h3>📋 Next Steps - Treatment Group</h3><p><strong>Reduce your child's screen time by 50%</strong> for 6 weeks.</p><p>We'll remind you in 6 weeks to complete the follow-up survey.</p>';
+      instructionsBox.innerHTML = `
+        <h3>📋 Next Steps - Treatment Group</h3>
+        <p><strong>Please reduce your child's screen time by 50% for the next 6 weeks.</strong></p>
+        <p>For example, if your child currently uses screens for 4 hours per day, reduce it to 2 hours per day.</p>
+        <p style="margin-top:12px;">We'll send you a reminder in 6 weeks to complete the follow-up survey using the same email address.</p>
+      `;
     } else {
-      instructionsBox.innerHTML = '<h3>📋 Next Steps - Control Group</h3><p><strong>Maintain current screen time habits</strong> for 6 weeks.</p><p>We'll remind you in 6 weeks to complete the follow-up survey.</p>';
+      instructionsBox.innerHTML = `
+        <h3>📋 Next Steps - Control Group</h3>
+        <p><strong>Please maintain your child's current screen time habits</strong> for the next 6 weeks.</p>
+        <p style="margin-top:12px;">We'll send you a reminder in 6 weeks to complete the follow-up survey using the same email address.</p>
+      `;
     }
   } else {
-    mainMsg.textContent = 'Week 6 survey complete. Thank you!';
-    instructionsBox.innerHTML = '<h3>🎉 Study Complete!</h3><p>Thank you for your valuable contribution to this research!</p>';
+    mainMsg.textContent = 'Your week 6 survey has been recorded. Thank you for completing both surveys!';
+    instructionsBox.innerHTML = `
+      <h3>🎉 Study Complete!</h3>
+      <p>You have successfully completed both the baseline and week 6 surveys. Your participation helps us understand the effects of screen time on child behavior.</p>
+      <p style="margin-top:12px;">Thank you for your valuable contribution to this research!</p>
+    `;
   }
   
   window.scrollTo(0, 0);
