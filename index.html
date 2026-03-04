@@ -427,12 +427,6 @@ let answered = new Set();
 // EMAIL ENTRY & PARTICIPANT CHECK
 // ═══════════════════════════════════════════════════════════
 async function checkParticipant() {
-  // Wait for Supabase to be ready
-  if (!supabase_client) {
-    alert('Database connection not ready. Please wait a moment and try again.');
-    return;
-  }
-  
   const emailInput = document.getElementById('email-input');
   const email = emailInput.value.trim().toLowerCase();
   
@@ -441,6 +435,61 @@ async function checkParticipant() {
     document.getElementById('email-error').textContent = '⚠ Please enter a valid email address';
     return;
   }
+
+  try {
+    console.log('Checking for participant:', email);
+    
+    // Check if participant exists
+    const { data, error } = await supabase_client
+      .from(TABLE_PARTICIPANTS)
+      .select('*')
+      .eq('email', email)
+      .single();
+
+    if (error && error.code !== 'PGRST116') {  // PGRST116 = no rows found
+      throw error;
+    }
+
+    if (data) {
+      // Existing participant
+      console.log('Existing participant found:', data);
+      currentParticipant = data;
+      
+      // Check if they've already completed both time points
+      if (data.baseline_completed_at && data.week6_completed_at) {
+        alert('You have already completed both surveys (baseline and week 6). Thank you for your participation!');
+        return;
+      }
+      
+      // Determine time point
+      const timePoint = data.baseline_completed_at ? 'week6' : 'baseline';
+      
+      // Check if trying to do week 6 too early
+      if (timePoint === 'week6') {
+        const baselineDate = new Date(data.baseline_completed_at);
+        const now = new Date();
+        const weeksSince = (now - baselineDate) / (1000 * 60 * 60 * 24 * 7);
+        
+        if (weeksSince < 5.5) {  // Allow slightly early (5.5 weeks instead of 6)
+          alert(`It's too early for your week 6 survey. Please wait until ${new Date(baselineDate.getTime() + 42 * 24 * 60 * 60 * 1000).toLocaleDateString()}. You completed your baseline survey ${Math.floor(weeksSince)} weeks ago.`);
+          return;
+        }
+      }
+      
+      showSurvey(timePoint);
+    } else {
+      // New participant - create record
+      console.log('New participant, creating record...');
+      const newParticipant = await createNewParticipant(email);
+      currentParticipant = newParticipant;
+      showSurvey('baseline');
+    }
+    
+  } catch (err) {
+    console.error('Error checking participant:', err);
+    alert('Error: ' + err.message);
+  }
+}
 
   try {
     console.log('Checking for participant:', email);
