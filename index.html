@@ -99,7 +99,7 @@
   <div class="survey-header">
     <div class="header-badge">Child Wellness Research Study</div>
     <h1>Understanding Screen Time & Child Development</h1>
-    <p>A 6-week intervention study on digital habits and behavior</p>
+    <p>A 3-week research study on digital habits and behavior</p>
   </div>
   <div class="survey-body email-entry-screen">
     <div class="email-card" style="text-align:left;">
@@ -110,7 +110,7 @@
       </p>
       
       <p style="margin-bottom:16px; line-height:1.8;">
-        By participating, you'll be contributing valuable data that will help us better understand how screen time impacts children's behavior, attention, and social development. This is a <strong>6-week study</strong> where you'll complete two short surveys—one at the beginning and one after six weeks.
+        By participating, you'll be contributing valuable data that will help us better understand how screen time impacts children's behavior, attention, and social development. This is a <strong>3-week study</strong> where you'll complete two short surveys—one at the beginning and one after three weeks.
       </p>
       
       <div style="background:var(--terracotta-pale); border:1px solid var(--terracotta-light); border-radius:12px; padding:20px; margin:20px 0;">
@@ -137,7 +137,7 @@
   <div class="survey-header">
     <div class="header-badge">Child Wellness Survey</div>
     <h1>Welcome to the Study</h1>
-    <p>This is a 6-week pre-post intervention study on screen time and child behavior</p>
+    <p>This is a 3-week pre-post research study on screen time and child behavior</p>
   </div>
   <div class="survey-body email-entry-screen">
     <div class="email-card">
@@ -166,13 +166,13 @@
     <!-- Intervention Notice (shown only for treatment group at baseline) -->
     <div id="intervention-notice" class="intervention-notice" style="display:none;">
       <h3>⚠️ Important: You've Been Assigned to the Treatment Group</h3>
-      <p>After completing this survey, please <strong>reduce your child's daily screen time by 50%</strong> for the next 6 weeks. We'll ask you to complete this same survey again in 6 weeks to measure the impact.</p>
+      <p>After completing this survey, please <strong>reduce your child's daily screen time by 50%</strong> for the next 3 weeks. We'll ask you to complete this same survey again in 3 weeks to measure the impact.</p>
       <p style="margin-top:10px;"><strong>Example:</strong> If your child currently uses screens for 4 hours/day, reduce it to 2 hours/day.</p>
     </div>
 
     <!-- Returning Participant Notice -->
     <div id="returning-notice" class="intro-card" style="display:none;">
-      <p><strong>Welcome back!</strong> You're completing your <strong id="time-point-label">week 6</strong> survey.</p>
+      <p><strong>Welcome back!</strong> You're completing your <strong id="time-point-label">week 3</strong> survey.</p>
       <p>Please answer the questions based on your child's behavior <strong>over the past week</strong>.</p>
     </div>
 
@@ -487,23 +487,28 @@ async function checkParticipant() {
       currentParticipant = data;
       
       // Check if they've already completed both time points
-      if (data.baseline_completed_at && data.week6_completed_at) {
-        alert('You have already completed both surveys (baseline and week 6). Thank you for your participation!');
+      if (data.baseline_completed_at && data.week3_completed_at) {
+        alert('You have already completed both surveys (baseline and week 3). Thank you for your participation!');
         return;
       }
       
       // Determine time point
-      const timePoint = data.baseline_completed_at ? 'week6' : 'baseline';
+      const timePoint = data.baseline_completed_at ? 'week3' : 'baseline';
       
-      // Check if trying to do week 6 too early
-      if (timePoint === 'week6') {
+      // Check if trying to do week 3 early and give option to proceed
+      if (timePoint === 'week3') {
         const baselineDate = new Date(data.baseline_completed_at);
         const now = new Date();
         const weeksSince = (now - baselineDate) / (1000 * 60 * 60 * 24 * 7);
         
-        if (weeksSince < 5.5) {  // Allow slightly early (5.5 weeks instead of 6)
-          alert(`It's too early for your week 6 survey. Please wait until ${new Date(baselineDate.getTime() + 42 * 24 * 60 * 60 * 1000).toLocaleDateString()}. You completed your baseline survey ${Math.floor(weeksSince)} weeks ago.`);
-          return;
+        if (weeksSince < 2.5) {  // Less than 2.5 weeks
+          const recommendedDate = new Date(baselineDate.getTime() + 21 * 24 * 60 * 60 * 1000).toLocaleDateString();
+          const proceedEarly = confirm(`You completed your baseline survey ${Math.floor(weeksSince * 10) / 10} weeks ago. We recommend waiting until ${recommendedDate} (3 weeks) for best results.\n\nHowever, you may proceed now if you prefer.\n\nClick OK to continue with the survey now, or Cancel to wait.`);
+          
+          if (!proceedEarly) {
+            return;  // User chose to wait
+          }
+          // If user clicked OK, continue to showSurvey below
         }
       }
       
@@ -574,11 +579,11 @@ function showSurvey(timePoint) {
     document.getElementById('intervention-notice').style.display = 'block';
     document.getElementById('first-time-intro').style.display = 'block';
     document.getElementById('returning-notice').style.display = 'none';
-  } else if (timePoint === 'week6') {
+  } else if (timePoint === 'week3') {
     document.getElementById('intervention-notice').style.display = 'none';
     document.getElementById('first-time-intro').style.display = 'none';
     document.getElementById('returning-notice').style.display = 'block';
-    document.getElementById('time-point-label').textContent = 'week 6';
+    document.getElementById('time-point-label').textContent = 'week 3';
   } else {
     // Baseline for control group
     document.getElementById('intervention-notice').style.display = 'none';
@@ -711,7 +716,7 @@ async function submitSurvey() {
       updateData.baseline_screen_time = screenTimeRaw;
       updateData.baseline_screen_time_mid = screenTimeMid;
     } else {
-      updateData.week6_completed_at = new Date().toISOString();
+      updateData.week3_completed_at = new Date().toISOString();
     }
 
     const { error: updateError } = await supabase_client
@@ -754,22 +759,22 @@ function showThankYou(timePoint) {
     if (currentParticipant.group_assignment === 'treatment') {
       instructionsBox.innerHTML = `
         <h3>📋 Next Steps - Treatment Group</h3>
-        <p><strong>Please reduce your child's screen time by 50% for the next 6 weeks.</strong></p>
+        <p><strong>Please reduce your child's screen time by 50% for the next 3 weeks.</strong></p>
         <p>For example, if your child currently uses screens for 4 hours per day, reduce it to 2 hours per day.</p>
-        <p style="margin-top:12px;">We'll send you a reminder in 6 weeks to complete the follow-up survey using the same email address.</p>
+        <p style="margin-top:12px;">We'll send you a reminder in 3 weeks to complete the follow-up survey using the same email address.</p>
       `;
     } else {
       instructionsBox.innerHTML = `
         <h3>📋 Next Steps - Control Group</h3>
-        <p><strong>Please maintain your child's current screen time habits</strong> for the next 6 weeks.</p>
-        <p style="margin-top:12px;">We'll send you a reminder in 6 weeks to complete the follow-up survey using the same email address.</p>
+        <p><strong>Please maintain your child's current screen time habits</strong> for the next 3 weeks.</p>
+        <p style="margin-top:12px;">We'll send you a reminder in 3 weeks to complete the follow-up survey using the same email address.</p>
       `;
     }
   } else {
-    mainMsg.textContent = 'Your week 6 survey has been recorded. Thank you for completing both surveys!';
+    mainMsg.textContent = 'Your week 3 survey has been recorded. Thank you for completing both surveys!';
     instructionsBox.innerHTML = `
       <h3>🎉 Study Complete!</h3>
-      <p>You have successfully completed both the baseline and week 6 surveys. Your participation helps us understand the effects of screen time on child behavior.</p>
+      <p>You have successfully completed both the baseline and week 3 surveys. Your participation helps us understand the effects of screen time on child behavior.</p>
       <p style="margin-top:12px;">Thank you for your valuable contribution to this research!</p>
     `;
   }
