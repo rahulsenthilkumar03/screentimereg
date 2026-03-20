@@ -177,7 +177,7 @@ function renderContacts(participants) {
 
   list.innerHTML = participants.map(p => {
     const baselineStatus = p.baseline_completed_at ? '✓ Baseline' : '○ Baseline';
-    const week6Status = p.week6_completed_at ? '✓ Week 6' : '○ Week 6';
+    const week3Status = p.week3_completed_at ? '✓ Week 3' : '○ Week 3';
     
     return `
     <div class="contact-item">
@@ -187,7 +187,7 @@ function renderContacts(participants) {
           <span class="contact-group ${p.group_assignment}">${p.group_assignment}</span>
         </div>
         <div class="contact-email">${p.email}</div>
-        <div class="contact-status">${baselineStatus} · ${week6Status}</div>
+        <div class="contact-status">${baselineStatus} · ${week3Status}</div>
       </div>
     </div>`;
   }).join('');
@@ -208,7 +208,7 @@ function exportContacts() {
     p.email,
     p.group_assignment,
     p.baseline_completed_at || '',
-    p.week6_completed_at || '',
+    p.week3_completed_at || '',
     p.created_at
   ]);
 
