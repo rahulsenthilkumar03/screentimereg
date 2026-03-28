@@ -432,8 +432,8 @@ function renderOverview(participants, responses) {
   const controlCount = participants.filter(p => p.group_assignment === 'control').length;
   const treatmentCount = participants.filter(p => p.group_assignment === 'treatment').length;
   const baselineComplete = participants.filter(p => p.baseline_completed_at).length;
-  const week3Complete = participants.filter(p => p.week3_completed_at).length;
-  const bothComplete = participants.filter(p => p.baseline_completed_at && p.week3_completed_at).length;
+  const week3Complete = participants.filter(p => p.week6_completed_at).length;
+  const bothComplete = participants.filter(p => p.baseline_completed_at && p.week6_completed_at).length;
 
   stats.innerHTML = `
     <div class="stat-card total">
@@ -536,11 +536,11 @@ function renderParticipants(participants) {
 
   grid.innerHTML = participants.map((p, i) => {
     const baselineDone = p.baseline_completed_at ? 'complete' : 'incomplete';
-    const week3Done = p.week3_completed_at ? 'complete' : 'incomplete';
+    const week3Done = p.week6_completed_at ? 'complete' : 'incomplete';
     
     // Find responses for this participant
     const baselineResp = cachedResponses.find(r => r.participant_id === p.participant_id && r.time_point === 'baseline');
-    const week3Resp = cachedResponses.find(r => r.participant_id === p.participant_id && r.time_point === 'week3');
+    const week3Resp = cachedResponses.find(r => r.participant_id === p.participant_id && (r.time_point === 'week3' || r.time_point === 'week6'));
     
     // Build score bars HTML
     let scoresHtml = '';
@@ -628,10 +628,10 @@ function renderParticipants(participants) {
           <span class="card-label">Baseline:</span>
           <span class="card-value">${new Date(p.baseline_completed_at).toLocaleDateString()}</span>
         </div>` : ''}
-        ${p.week3_completed_at ? `
+        ${p.week6_completed_at ? `
         <div class="card-row">
           <span class="card-label">Week 3:</span>
-          <span class="card-value">${new Date(p.week3_completed_at).toLocaleDateString()}</span>
+          <span class="card-value">${new Date(p.week6_completed_at).toLocaleDateString()}</span>
         </div>` : ''}
         <div class="completion-status">
           <div style="display:flex;align-items:center;gap:6px;">
@@ -930,7 +930,7 @@ function renderScoreAnalysis(participants, responses) {
 function renderPrePost(participants, responses) {
   const content = document.getElementById('prepost-content');
   
-  const paired = participants.filter(p => p.baseline_completed_at && p.week3_completed_at);
+  const paired = participants.filter(p => p.baseline_completed_at && p.week6_completed_at);
   
   if (paired.length === 0) {
     content.innerHTML = '<div class="empty-state"><div class="empty-icon">📈</div><h3>No paired data yet</h3><p>Participants must complete both baseline and week 3 surveys.</p></div>';
@@ -939,7 +939,7 @@ function renderPrePost(participants, responses) {
 
   content.innerHTML = paired.map(p => {
     const baseline = responses.find(r => r.participant_id === p.participant_id && r.time_point === 'baseline');
-    const week3 = responses.find(r => r.participant_id === p.participant_id && r.time_point === 'week3');
+    const week3 = responses.find(r => r.participant_id === p.participant_id && (r.time_point === 'week3' || r.time_point === 'week6'));
     
     if (!baseline || !week3) return '';
 
@@ -1006,7 +1006,7 @@ function renderPrePost(participants, responses) {
 function renderComparison(participants, responses) {
   const charts = document.getElementById('comparison-charts');
   
-  const pairedParticipants = participants.filter(p => p.baseline_completed_at && p.week3_completed_at);
+  const pairedParticipants = participants.filter(p => p.baseline_completed_at && p.week6_completed_at);
   
   if (pairedParticipants.length === 0) {
     charts.innerHTML = '<div class="empty-state" style="grid-column:1/-1;"><div class="empty-icon">⚖️</div><h3>Need paired data</h3><p>Comparison requires participants who completed both surveys.</p></div>';
@@ -1018,13 +1018,13 @@ function renderComparison(participants, responses) {
 
   const controlChanges = controlPaired.map(p => {
     const b = responses.find(r => r.participant_id === p.participant_id && r.time_point === 'baseline');
-    const w = responses.find(r => r.participant_id === p.participant_id && r.time_point === 'week3');
+    const w = responses.find(r => r.participant_id === p.participant_id && (r.time_point === 'week3' || r.time_point === 'week6'));
     return { irr: w.irritability - b.irritability, att: w.attention - b.attention, soc: w.social - b.social };
   });
 
   const treatmentChanges = treatmentPaired.map(p => {
     const b = responses.find(r => r.participant_id === p.participant_id && r.time_point === 'baseline');
-    const w = responses.find(r => r.participant_id === p.participant_id && r.time_point === 'week3');
+    const w = responses.find(r => r.participant_id === p.participant_id && (r.time_point === 'week3' || r.time_point === 'week6'));
     return { irr: w.irritability - b.irritability, att: w.attention - b.attention, soc: w.social - b.social };
   });
 
