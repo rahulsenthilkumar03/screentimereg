@@ -182,7 +182,6 @@ body { font-family:'Outfit',sans-serif; background:var(--bg); color:var(--text);
 </head>
 <body>
 
-<!-- LOGIN -->
 <div id="login-screen">
   <div class="login-box">
     <div class="login-logo">🔬</div>
@@ -194,7 +193,6 @@ body { font-family:'Outfit',sans-serif; background:var(--bg); color:var(--text);
   </div>
 </div>
 
-<!-- APP -->
 <div id="app">
   <div class="topbar">
     <div class="topbar-left">
@@ -221,13 +219,11 @@ body { font-family:'Outfit',sans-serif; background:var(--bg); color:var(--text);
   </div>
 
   <div class="main">
-    <!-- OVERVIEW -->
     <div class="tab-panel active" id="tab-overview">
       <div class="stat-row" id="overview-stats"></div>
       <div class="chart-grid" id="overview-charts"></div>
     </div>
 
-    <!-- PARTICIPANTS -->
     <div class="tab-panel" id="tab-participants">
       <div class="section-header">
         <h2>Participant List</h2>
@@ -235,7 +231,6 @@ body { font-family:'Outfit',sans-serif; background:var(--bg); color:var(--text);
       <div class="participant-grid" id="participant-grid"></div>
     </div>
 
-    <!-- SCORE ANALYSIS (NEW - All Original Statistics) -->
     <div class="tab-panel" id="tab-scores">
       <div class="section-header">
         <h2>Detailed Score Analysis</h2>
@@ -244,7 +239,6 @@ body { font-family:'Outfit',sans-serif; background:var(--bg); color:var(--text);
       <div class="chart-grid" id="score-charts"></div>
     </div>
 
-    <!-- PRE-POST ANALYSIS -->
     <div class="tab-panel" id="tab-prepost">
       <div class="section-header">
         <h2>Pre-Post Change Analysis</h2>
@@ -252,7 +246,6 @@ body { font-family:'Outfit',sans-serif; background:var(--bg); color:var(--text);
       <div id="prepost-content"></div>
     </div>
 
-    <!-- GROUP COMPARISON -->
     <div class="tab-panel" id="tab-comparison">
       <div class="section-header">
         <h2>Control vs Treatment Groups</h2>
@@ -260,7 +253,6 @@ body { font-family:'Outfit',sans-serif; background:var(--bg); color:var(--text);
       <div class="chart-grid" id="comparison-charts"></div>
     </div>
 
-    <!-- AI INSIGHTS -->
     <div class="tab-panel" id="tab-ai-insights">
       <div class="section-header">
         <h2>AI-Powered Data Analysis</h2>
@@ -304,12 +296,30 @@ body { font-family:'Outfit',sans-serif; background:var(--bg); color:var(--text);
       </div>
     </div>
 
-    <!-- RAW DATA -->
     <div class="tab-panel" id="tab-data">
       <div class="section-header">
-        <h2>Raw Data Table</h2>
+        <h2>Raw Data Tables</h2>
         <button class="top-btn primary" onclick="doExport()">⬇ Export CSV</button>
       </div>
+      
+      <h3 style="font-family:'Outfit',sans-serif; font-size:16px; margin-bottom:12px; color:var(--text);">Baseline Responses</h3>
+      <div class="table-wrap" style="margin-bottom: 24px;">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Participant ID</th><th>Group</th><th>Time Point</th><th>Date</th>
+              <th>Age</th><th>Grade</th><th>Screen Time</th>
+              <th>Q1</th><th>Q2</th><th>Q3</th><th>Q4</th><th>Q5</th>
+              <th>Q6</th><th>Q7</th><th>Q8</th><th>Q9</th><th>Q10</th>
+              <th>Q11</th><th>Q12</th><th>Q13</th><th>Q14</th><th>Q15</th>
+              <th>Irritability</th><th>Attention</th><th>Social</th><th>Total</th>
+            </tr>
+          </thead>
+          <tbody id="raw-table-body-baseline"></tbody>
+        </table>
+      </div>
+
+      <h3 style="font-family:'Outfit',sans-serif; font-size:16px; margin-bottom:12px; color:var(--text);">Follow-Up (Week 3) Responses</h3>
       <div class="table-wrap">
         <table class="data-table">
           <thead>
@@ -322,7 +332,7 @@ body { font-family:'Outfit',sans-serif; background:var(--bg); color:var(--text);
               <th>Irritability</th><th>Attention</th><th>Social</th><th>Total</th>
             </tr>
           </thead>
-          <tbody id="raw-table-body"></tbody>
+          <tbody id="raw-table-body-followup"></tbody>
         </table>
       </div>
     </div>
@@ -479,9 +489,15 @@ function renderOverview(participants, responses) {
 
   const controlCount = participants.filter(p => p.group_assignment === 'control').length;
   const treatmentCount = participants.filter(p => p.group_assignment === 'treatment').length;
-  const baselineComplete = participants.filter(p => p.baseline_completed_at).length;
-  const week3Complete = participants.filter(p => p.week6_completed_at).length;
-  const bothComplete = participants.filter(p => p.baseline_completed_at && p.week6_completed_at).length;
+  
+  // Dynamically pair based on responses rather than backend fields
+  const baselineComplete = participants.filter(p => responses.some(r => String(r.participant_id) === String(p.participant_id) && r.time_point === 'baseline')).length;
+  const week3Complete = participants.filter(p => responses.some(r => String(r.participant_id) === String(p.participant_id) && (r.time_point === 'week3' || r.time_point === 'week6'))).length;
+  const bothComplete = participants.filter(p => {
+    const pIdStr = String(p.participant_id);
+    return responses.some(r => String(r.participant_id) === pIdStr && r.time_point === 'baseline') &&
+           responses.some(r => String(r.participant_id) === pIdStr && (r.time_point === 'week3' || r.time_point === 'week6'));
+  }).length;
 
   stats.innerHTML = `
     <div class="stat-card total">
@@ -583,13 +599,13 @@ function renderParticipants(participants) {
   const qLabels = ['Q1','Q2','Q3','Q4','Q5','Q6','Q7','Q8','Q9','Q10','Q11','Q12','Q13','Q14','Q15'];
 
   grid.innerHTML = participants.map((p, i) => {
-    const baselineDone = p.baseline_completed_at ? 'complete' : 'incomplete';
-    const week3Done = p.week6_completed_at ? 'complete' : 'incomplete';
-    
     // Find responses for this participant (use String for robust matching)
     const participantIdStr = String(p.participant_id);
     const baselineResp = cachedResponses.find(r => String(r.participant_id) === participantIdStr && r.time_point === 'baseline');
     const week3Resp = cachedResponses.find(r => String(r.participant_id) === participantIdStr && (r.time_point === 'week3' || r.time_point === 'week6'));
+    
+    const baselineDone = baselineResp ? 'complete' : 'incomplete';
+    const week3Done = week3Resp ? 'complete' : 'incomplete';
     
     // Build score bars HTML
     let scoresHtml = '';
@@ -672,15 +688,15 @@ function renderParticipants(participants) {
           <span class="card-label">Enrolled:</span>
           <span class="card-value">${new Date(p.created_at).toLocaleDateString()}</span>
         </div>
-        ${p.baseline_completed_at ? `
+        ${baselineResp ? `
         <div class="card-row">
           <span class="card-label">Baseline:</span>
-          <span class="card-value">${new Date(p.baseline_completed_at).toLocaleDateString()}</span>
+          <span class="card-value">${new Date(baselineResp.created_at).toLocaleDateString()}</span>
         </div>` : ''}
-        ${p.week6_completed_at ? `
+        ${week3Resp ? `
         <div class="card-row">
-          <span class="card-label">Week 3:</span>
-          <span class="card-value">${new Date(p.week6_completed_at).toLocaleDateString()}</span>
+          <span class="card-label">Follow-up:</span>
+          <span class="card-value">${new Date(week3Resp.created_at).toLocaleDateString()}</span>
         </div>` : ''}
         <div class="completion-status">
           <div style="display:flex;align-items:center;gap:6px;">
@@ -700,7 +716,7 @@ function renderParticipants(participants) {
 }
 
 // ═══════════════════════════════════════════════════════════
-// SCORE ANALYSIS TAB (Original Statistics)
+// SCORE ANALYSIS TAB 
 // ═══════════════════════════════════════════════════════════
 function renderScoreAnalysis(participants, responses) {
   const stats = document.getElementById('score-stats');
@@ -979,16 +995,18 @@ function renderScoreAnalysis(participants, responses) {
 function renderPrePost(participants, responses) {
   const content = document.getElementById('prepost-content');
   
-  const paired = participants.filter(p => p.baseline_completed_at && p.week6_completed_at);
+  // Dynamically pair based on responses array
+  const paired = participants.filter(p => {
+    const pIdStr = String(p.participant_id);
+    const hasBaseline = responses.some(r => String(r.participant_id) === pIdStr && r.time_point === 'baseline');
+    const hasFollowup = responses.some(r => String(r.participant_id) === pIdStr && (r.time_point === 'week3' || r.time_point === 'week6'));
+    return hasBaseline && hasFollowup;
+  });
   
   if (paired.length === 0) {
     content.innerHTML = '<div class="empty-state"><div class="empty-icon">📈</div><h3>No paired data yet</h3><p>Participants must complete both baseline and week 3 surveys.</p></div>';
     return;
   }
-
-  // Debug logging
-  console.log('Paired participants:', paired.length);
-  console.log('Total responses:', responses.length);
   
   const cards = paired.map(p => {
     // Convert to string for robust matching
@@ -996,15 +1014,6 @@ function renderPrePost(participants, responses) {
     
     const baseline = responses.find(r => String(r.participant_id) === participantIdStr && r.time_point === 'baseline');
     const week3 = responses.find(r => String(r.participant_id) === participantIdStr && (r.time_point === 'week3' || r.time_point === 'week6'));
-    
-    // Debug logging for missing data
-    if (!baseline) {
-      console.log(`Missing baseline for participant ${participantIdStr}`);
-    }
-    if (!week3) {
-      console.log(`Missing week3/week6 for participant ${participantIdStr}`);
-      console.log('Available responses for this participant:', responses.filter(r => String(r.participant_id) === participantIdStr));
-    }
     
     if (!baseline || !week3) return '';
 
@@ -1064,17 +1073,8 @@ function renderPrePost(participants, responses) {
     </div>`;
   });
   
-  // Filter out empty strings and assign to content
   const validCards = cards.filter(c => c);
-  
-  if (validCards.length === 0) {
-    content.innerHTML = '<div class="empty-state"><div class="empty-icon">⚠️</div><h3>Data mismatch detected</h3><p>Participants have completion timestamps but response data is missing. Check browser console for details.</p></div>';
-    console.error('Paired participants exist but no matching responses found');
-    console.log('Participants with both timestamps:', paired);
-    console.log('All responses:', responses);
-  } else {
-    content.innerHTML = validCards.join('');
-  }
+  content.innerHTML = validCards.join('');
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1083,7 +1083,13 @@ function renderPrePost(participants, responses) {
 function renderComparison(participants, responses) {
   const charts = document.getElementById('comparison-charts');
   
-  const pairedParticipants = participants.filter(p => p.baseline_completed_at && p.week6_completed_at);
+  // Dynamically pair based on responses array
+  const pairedParticipants = participants.filter(p => {
+    const pIdStr = String(p.participant_id);
+    const hasBaseline = responses.some(r => String(r.participant_id) === pIdStr && r.time_point === 'baseline');
+    const hasFollowup = responses.some(r => String(r.participant_id) === pIdStr && (r.time_point === 'week3' || r.time_point === 'week6'));
+    return hasBaseline && hasFollowup;
+  });
   
   if (pairedParticipants.length === 0) {
     charts.innerHTML = '<div class="empty-state" style="grid-column:1/-1;"><div class="empty-icon">⚖️</div><h3>Need paired data</h3><p>Comparison requires participants who completed both surveys.</p></div>';
@@ -1176,46 +1182,54 @@ function renderComparison(participants, responses) {
 // RAW DATA TAB
 // ═══════════════════════════════════════════════════════════
 function renderRawTable(responses, participants) {
-  const body = document.getElementById('raw-table-body');
+  const baselineBody = document.getElementById('raw-table-body-baseline');
+  const followupBody = document.getElementById('raw-table-body-followup');
   
-  if (responses.length === 0) {
-    body.innerHTML = '<tr><td colspan="26" class="no-data-msg">No responses yet.</td></tr>';
-    return;
+  const baselineResponses = responses.filter(r => r.time_point === 'baseline');
+  const followupResponses = responses.filter(r => r.time_point === 'week3' || r.time_point === 'week6');
+
+  function generateTableHTML(resps) {
+    if (resps.length === 0) {
+      return '<tr><td colspan="26" class="no-data-msg">No responses yet.</td></tr>';
+    }
+    
+    return resps.map(r => {
+      const participant = participants.find(p => String(p.participant_id) === String(r.participant_id));
+      const date = new Date(r.created_at).toLocaleDateString();
+      
+      return `<tr>
+        <td class="mono">${r.participant_id}</td>
+        <td>${participant?.group_assignment || '—'}</td>
+        <td>${r.time_point}</td>
+        <td>${date}</td>
+        <td>${r.age || '—'}</td>
+        <td>${r.grade}</td>
+        <td>${r.screen_time}</td>
+        <td class="mono">${r.q1}</td>
+        <td class="mono">${r.q2}</td>
+        <td class="mono">${r.q3}</td>
+        <td class="mono">${r.q4}</td>
+        <td class="mono">${r.q5}</td>
+        <td class="mono">${r.q6}</td>
+        <td class="mono">${r.q7}</td>
+        <td class="mono">${r.q8}</td>
+        <td class="mono">${r.q9}</td>
+        <td class="mono">${r.q10}</td>
+        <td class="mono">${r.q11}</td>
+        <td class="mono">${r.q12}</td>
+        <td class="mono">${r.q13}</td>
+        <td class="mono">${r.q14}</td>
+        <td class="mono">${r.q15}</td>
+        <td class="mono">${r.irritability}</td>
+        <td class="mono">${r.attention}</td>
+        <td class="mono">${r.social}</td>
+        <td class="mono">${r.total}</td>
+      </tr>`;
+    }).join('');
   }
 
-  body.innerHTML = responses.map(r => {
-    const participant = participants.find(p => p.participant_id === r.participant_id);
-    const date = new Date(r.created_at).toLocaleDateString();
-    
-    return `<tr>
-      <td class="mono">${r.participant_id}</td>
-      <td>${participant?.group_assignment || '—'}</td>
-      <td>${r.time_point}</td>
-      <td>${date}</td>
-      <td>${r.age || '—'}</td>
-      <td>${r.grade}</td>
-      <td>${r.screen_time}</td>
-      <td class="mono">${r.q1}</td>
-      <td class="mono">${r.q2}</td>
-      <td class="mono">${r.q3}</td>
-      <td class="mono">${r.q4}</td>
-      <td class="mono">${r.q5}</td>
-      <td class="mono">${r.q6}</td>
-      <td class="mono">${r.q7}</td>
-      <td class="mono">${r.q8}</td>
-      <td class="mono">${r.q9}</td>
-      <td class="mono">${r.q10}</td>
-      <td class="mono">${r.q11}</td>
-      <td class="mono">${r.q12}</td>
-      <td class="mono">${r.q13}</td>
-      <td class="mono">${r.q14}</td>
-      <td class="mono">${r.q15}</td>
-      <td class="mono">${r.irritability}</td>
-      <td class="mono">${r.attention}</td>
-      <td class="mono">${r.social}</td>
-      <td class="mono">${r.total}</td>
-    </tr>`;
-  }).join('');
+  baselineBody.innerHTML = generateTableHTML(baselineResponses);
+  followupBody.innerHTML = generateTableHTML(followupResponses);
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1394,7 +1408,14 @@ Be practical and actionable. Consider this is a student research project.`;
 }
 
 function calculateDataSummary(participants, responses) {
-  const paired = participants.filter(p => p.baseline_completed_at && p.week6_completed_at);
+  // Dynamically pair based on responses array
+  const paired = participants.filter(p => {
+    const pIdStr = String(p.participant_id);
+    const hasBaseline = responses.some(r => String(r.participant_id) === pIdStr && r.time_point === 'baseline');
+    const hasFollowup = responses.some(r => String(r.participant_id) === pIdStr && (r.time_point === 'week3' || r.time_point === 'week6'));
+    return hasBaseline && hasFollowup;
+  });
+  
   const treatment = participants.filter(p => p.group_assignment === 'treatment');
   const control = participants.filter(p => p.group_assignment === 'control');
   const treatmentPaired = paired.filter(p => p.group_assignment === 'treatment');
@@ -1443,8 +1464,8 @@ function calculateDataSummary(participants, responses) {
     study_overview: {
       total_participants: participants.length,
       total_enrolled: participants.length,
-      baseline_completed: participants.filter(p => p.baseline_completed_at).length,
-      followup_completed: participants.filter(p => p.week6_completed_at).length,
+      baseline_completed: participants.filter(p => responses.some(r => String(r.participant_id) === String(p.participant_id) && r.time_point === 'baseline')).length,
+      followup_completed: participants.filter(p => responses.some(r => String(r.participant_id) === String(p.participant_id) && (r.time_point === 'week3' || r.time_point === 'week6'))).length,
       both_completed: paired.length,
       completion_rate: `${((paired.length / participants.length) * 100).toFixed(1)}%`,
       treatment_group_size: treatment.length,
