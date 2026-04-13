@@ -586,9 +586,10 @@ function renderParticipants(participants) {
     const baselineDone = p.baseline_completed_at ? 'complete' : 'incomplete';
     const week3Done = p.week6_completed_at ? 'complete' : 'incomplete';
     
-    // Find responses for this participant
-    const baselineResp = cachedResponses.find(r => r.participant_id === p.participant_id && r.time_point === 'baseline');
-    const week3Resp = cachedResponses.find(r => r.participant_id === p.participant_id && (r.time_point === 'week3' || r.time_point === 'week6'));
+    // Find responses for this participant (use String for robust matching)
+    const participantIdStr = String(p.participant_id);
+    const baselineResp = cachedResponses.find(r => String(r.participant_id) === participantIdStr && r.time_point === 'baseline');
+    const week3Resp = cachedResponses.find(r => String(r.participant_id) === participantIdStr && (r.time_point === 'week3' || r.time_point === 'week6'));
     
     // Build score bars HTML
     let scoresHtml = '';
@@ -985,9 +986,25 @@ function renderPrePost(participants, responses) {
     return;
   }
 
-  content.innerHTML = paired.map(p => {
-    const baseline = responses.find(r => r.participant_id === p.participant_id && r.time_point === 'baseline');
-    const week3 = responses.find(r => r.participant_id === p.participant_id && (r.time_point === 'week3' || r.time_point === 'week6'));
+  // Debug logging
+  console.log('Paired participants:', paired.length);
+  console.log('Total responses:', responses.length);
+  
+  const cards = paired.map(p => {
+    // Convert to string for robust matching
+    const participantIdStr = String(p.participant_id);
+    
+    const baseline = responses.find(r => String(r.participant_id) === participantIdStr && r.time_point === 'baseline');
+    const week3 = responses.find(r => String(r.participant_id) === participantIdStr && (r.time_point === 'week3' || r.time_point === 'week6'));
+    
+    // Debug logging for missing data
+    if (!baseline) {
+      console.log(`Missing baseline for participant ${participantIdStr}`);
+    }
+    if (!week3) {
+      console.log(`Missing week3/week6 for participant ${participantIdStr}`);
+      console.log('Available responses for this participant:', responses.filter(r => String(r.participant_id) === participantIdStr));
+    }
     
     if (!baseline || !week3) return '';
 
@@ -1045,7 +1062,19 @@ function renderPrePost(participants, responses) {
         </div>
       </div>
     </div>`;
-  }).join('');
+  });
+  
+  // Filter out empty strings and assign to content
+  const validCards = cards.filter(c => c);
+  
+  if (validCards.length === 0) {
+    content.innerHTML = '<div class="empty-state"><div class="empty-icon">⚠️</div><h3>Data mismatch detected</h3><p>Participants have completion timestamps but response data is missing. Check browser console for details.</p></div>';
+    console.error('Paired participants exist but no matching responses found');
+    console.log('Participants with both timestamps:', paired);
+    console.log('All responses:', responses);
+  } else {
+    content.innerHTML = validCards.join('');
+  }
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1065,16 +1094,20 @@ function renderComparison(participants, responses) {
   const treatmentPaired = pairedParticipants.filter(p => p.group_assignment === 'treatment');
 
   const controlChanges = controlPaired.map(p => {
-    const b = responses.find(r => r.participant_id === p.participant_id && r.time_point === 'baseline');
-    const w = responses.find(r => r.participant_id === p.participant_id && (r.time_point === 'week3' || r.time_point === 'week6'));
+    const participantIdStr = String(p.participant_id);
+    const b = responses.find(r => String(r.participant_id) === participantIdStr && r.time_point === 'baseline');
+    const w = responses.find(r => String(r.participant_id) === participantIdStr && (r.time_point === 'week3' || r.time_point === 'week6'));
+    if (!b || !w) return null;
     return { irr: w.irritability - b.irritability, att: w.attention - b.attention, soc: w.social - b.social };
-  });
+  }).filter(x => x !== null);
 
   const treatmentChanges = treatmentPaired.map(p => {
-    const b = responses.find(r => r.participant_id === p.participant_id && r.time_point === 'baseline');
-    const w = responses.find(r => r.participant_id === p.participant_id && (r.time_point === 'week3' || r.time_point === 'week6'));
+    const participantIdStr = String(p.participant_id);
+    const b = responses.find(r => String(r.participant_id) === participantIdStr && r.time_point === 'baseline');
+    const w = responses.find(r => String(r.participant_id) === participantIdStr && (r.time_point === 'week3' || r.time_point === 'week6'));
+    if (!b || !w) return null;
     return { irr: w.irritability - b.irritability, att: w.attention - b.attention, soc: w.social - b.social };
-  });
+  }).filter(x => x !== null);
 
   const controlAvg = {
     irr: avg(controlChanges.map(c => c.irr)),
@@ -1369,8 +1402,9 @@ function calculateDataSummary(participants, responses) {
   
   // Calculate changes for each group
   const treatmentChanges = treatmentPaired.map(p => {
-    const baseline = responses.find(r => r.participant_id === p.participant_id && r.time_point === 'baseline');
-    const followup = responses.find(r => r.participant_id === p.participant_id && (r.time_point === 'week3' || r.time_point === 'week6'));
+    const participantIdStr = String(p.participant_id);
+    const baseline = responses.find(r => String(r.participant_id) === participantIdStr && r.time_point === 'baseline');
+    const followup = responses.find(r => String(r.participant_id) === participantIdStr && (r.time_point === 'week3' || r.time_point === 'week6'));
     if (!baseline || !followup) return null;
     return {
       participant_id: p.participant_id,
@@ -1386,8 +1420,9 @@ function calculateDataSummary(participants, responses) {
   }).filter(x => x !== null);
   
   const controlChanges = controlPaired.map(p => {
-    const baseline = responses.find(r => r.participant_id === p.participant_id && r.time_point === 'baseline');
-    const followup = responses.find(r => r.participant_id === p.participant_id && (r.time_point === 'week3' || r.time_point === 'week6'));
+    const participantIdStr = String(p.participant_id);
+    const baseline = responses.find(r => String(r.participant_id) === participantIdStr && r.time_point === 'baseline');
+    const followup = responses.find(r => String(r.participant_id) === participantIdStr && (r.time_point === 'week3' || r.time_point === 'week6'));
     if (!baseline || !followup) return null;
     return {
       participant_id: p.participant_id,
