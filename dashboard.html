@@ -382,7 +382,8 @@ function destroyChart(id) {
 // AUTHENTICATION
 // ═══════════════════════════════════════════════════════════
 function doLogin() {
-  if (document.getElementById('pass-input').value === PASSWORD) {
+  // SURGICAL EDIT: Added .trim() to the value before comparing it to PASSWORD
+  if (document.getElementById('pass-input').value.trim() === PASSWORD) {
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('app').style.display = 'block';
     refreshAll();
